@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Morrigan sshUI
+Bundle-SymbolicName: com.vaguehope.morrigan.sshui
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.vaguehope.morrigan.sshui.Activator
+Bundle-Vendor: vaguehope.com
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .,
+ lib/lanterna-2.1.8.jar,
+ lib/logback-classic-1.1.2.jar,
+ lib/logback-core-1.1.2.jar,
+ lib/slf4j-api-1.7.7.jar,
+ lib/sshd-core-0.11.0.jar
+Import-Package: com.vaguehope.morrigan.config,
+ com.vaguehope.morrigan.engines.playback,
+ com.vaguehope.morrigan.model,
+ com.vaguehope.morrigan.model.media,
+ com.vaguehope.morrigan.player,
+ com.vaguehope.morrigan.util,
+ org.osgi.framework
+Export-Package: com.vaguehope.morrigan.sshui
