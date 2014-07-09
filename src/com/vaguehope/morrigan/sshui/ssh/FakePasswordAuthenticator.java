@@ -9,7 +9,7 @@ public class FakePasswordAuthenticator implements PasswordAuthenticator {
 
 	@Override
 	public boolean authenticate (final String username, final String password, final ServerSession session) {
-		return username != null && username.equals(password); // FIXME dodge test auth.
+		return username != null; // TODO implement this.
 	}
 
 }
