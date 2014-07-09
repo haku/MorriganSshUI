@@ -20,7 +20,7 @@ import com.vaguehope.morrigan.sshui.util.Quietly;
 
 public abstract class SshScreen implements Runnable {
 
-	private static final long POLL_CYCLE = 200L;
+	private static final long POLL_CYCLE = 100L;
 	private static final long PRINT_CYCLE = 500L;
 	private static final long SHUTDOWN_TIMEOUT = 5000L;
 
@@ -73,6 +73,7 @@ public abstract class SshScreen implements Runnable {
 		if (!this.inited) {
 			this.inited = true; // Only try once.
 			this.screen.startScreen();
+			initScreen(this.screen);
 			LOG.info("Session created: {}", this.name);
 		}
 	}
@@ -110,7 +111,7 @@ public abstract class SshScreen implements Runnable {
 		boolean changed = false;
 		Key k;
 		while ((k = this.terminal.readInput()) != null) {
-			changed = readInput(k);
+			changed = onInput(k);
 		}
 		return changed;
 	}
@@ -125,8 +126,12 @@ public abstract class SshScreen implements Runnable {
 		this.screen.refresh();
 	}
 
-	protected abstract boolean readInput (Key k);
+	/**
+	 * Return true if screen needs redrawing.
+	 */
+	protected abstract boolean onInput (Key k);
 
+	protected abstract void initScreen (Screen scr);
 	protected abstract void writeScreen (Screen scr, ScreenWriter w);
 
 }
