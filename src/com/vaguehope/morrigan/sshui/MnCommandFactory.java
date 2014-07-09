@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 public class MnCommandFactory implements Factory<Command> {
 
 	private static final String THREAD_NAME_PREFIX = "ConsoleSch";
-	private static final int CLIENT_THREADS = 5;
+	private static final int CLIENT_THREADS = 1;
 
 	private final MnContext mnContext;
 	private final ScheduledExecutorService schEx;
