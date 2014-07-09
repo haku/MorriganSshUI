@@ -10,14 +10,16 @@ import org.apache.sshd.server.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConsoleCommandFactory implements Factory<Command> {
+public class MnCommandFactory implements Factory<Command> {
 
 	private static final String THREAD_NAME_PREFIX = "ConsoleSch";
 	private static final int CLIENT_THREADS = 5;
 
+	private final MnContext mnContext;
 	private final ScheduledExecutorService schEx;
 
-	public ConsoleCommandFactory () {
+	public MnCommandFactory (final MnContext mnContext) {
+		this.mnContext = mnContext;
 		this.schEx = Executors.newScheduledThreadPool(CLIENT_THREADS,
 				new NamedThreadFactory(new LoggingThreadGroup(Thread.currentThread().getThreadGroup(), THREAD_NAME_PREFIX), THREAD_NAME_PREFIX));
 	}
@@ -28,12 +30,12 @@ public class ConsoleCommandFactory implements Factory<Command> {
 
 	@Override
 	public Command create () {
-		return new ConsoleCommand(this.schEx);
+		return new MnCommand(this.mnContext, this.schEx);
 	}
 
 	private static class LoggingThreadGroup extends ThreadGroup {
 
-		private static final Logger LOG = LoggerFactory.getLogger(ConsoleCommandFactory.LoggingThreadGroup.class);
+		private static final Logger LOG = LoggerFactory.getLogger(MnCommandFactory.LoggingThreadGroup.class);
 
 		public LoggingThreadGroup (final ThreadGroup parent, final String namePrefix) {
 			super(parent, "tg-" + namePrefix);

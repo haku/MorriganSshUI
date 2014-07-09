@@ -16,19 +16,21 @@ import org.apache.sshd.server.session.ServerSession;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.vaguehope.morrigan.sshui.term.SshTerminal;
 
-public class ConsoleCommand implements Command, SessionAware {
+public class MnCommand implements Command, SessionAware {
 
 	private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
+	private final MnContext mnContext;
 	private final ScheduledExecutorService schEx;
 
 	private InputStream in;
 	private OutputStream out;
 	private ExitCallback callback;
 
-	private volatile DesuScreen term = null;
+	private volatile MnScreen term = null;
 
-	public ConsoleCommand (final ScheduledExecutorService schEx) {
+	public MnCommand (final MnContext mnContext, final ScheduledExecutorService schEx) {
+		this.mnContext = mnContext;
 		this.schEx = schEx;
 	}
 
@@ -56,7 +58,7 @@ public class ConsoleCommand implements Command, SessionAware {
 	@Override
 	public void start (final Environment env) throws IOException {
 		final Terminal terminal = new SshTerminal(this.in, this.out, Charset.forName("UTF8"), env);
-		this.term = new DesuScreen("desuTerm" + COUNTER.getAndIncrement(), env, terminal, this.callback);
+		this.term = new MnScreen("mnScreen" + COUNTER.getAndIncrement(), this.mnContext, env, terminal, this.callback);
 		this.term.schedule(this.schEx);
 	}
 
