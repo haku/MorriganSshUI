@@ -8,6 +8,7 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
 
+import com.googlecode.lanterna.input.SshInputMapping;
 import com.googlecode.lanterna.terminal.TerminalSize;
 import com.googlecode.lanterna.terminal.text.UnixTerminal;
 import com.googlecode.lanterna.terminal.text.UnixTerminalSizeQuerier;
@@ -16,6 +17,7 @@ public class SshTerminal extends UnixTerminal implements SignalListener {
 
 	public SshTerminal (final InputStream terminalInput, final OutputStream terminalOutput, final Charset terminalCharset, final Environment env) {
 		super(terminalInput, terminalOutput, terminalCharset, new SshTerminalSizeQuerier(env));
+		addInputProfile(new SshInputMapping());
 		env.addSignalListener(this, Signal.WINCH);
 	}
 

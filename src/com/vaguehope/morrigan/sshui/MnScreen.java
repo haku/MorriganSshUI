@@ -51,8 +51,6 @@ public class MnScreen extends SshScreen {
 
 	@Override
 	protected boolean onInput (final Key k) {
-		LOG.info("kind={} char={}", k.getKind(), Character.getNumericValue(k.getCharacter()));
-
 		if (k.getKind() == Kind.NormalKey && k.getCharacter() == 'q') {
 			scheduleQuit();
 			return false; // We are quitting.  Do not try and update UI.
@@ -80,6 +78,7 @@ public class MnScreen extends SshScreen {
 					default:
 				}
 			default:
+				LOG.info("kind={} char={}", k.getKind(), String.valueOf((int) k.getCharacter()));
 				return false;
 		}
 	}
