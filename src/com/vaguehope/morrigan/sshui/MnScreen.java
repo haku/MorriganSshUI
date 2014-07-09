@@ -10,6 +10,7 @@ import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.googlecode.lanterna.terminal.Terminal;
+import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.LocalPlayer;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
@@ -42,6 +43,9 @@ public class MnScreen extends SshScreen {
 		int l = 0;
 		w.drawString(0, l++, "Players");
 		l += printPlayers(w, l);
+		l++;
+		w.drawString(0, l++, "DBs");
+		l += printDbs(w, l);
 	}
 
 	private int printPlayers (final ScreenWriter w, final int initialLine) {
@@ -96,6 +100,20 @@ public class MnScreen extends SshScreen {
 	private static String playingItemTitle (final Player p) {
 		final PlayItem currentItem = p.getCurrentItem();
 		return currentItem != null && currentItem.hasTrack() ? currentItem.getTrack().getTitle() : "";
+	}
+
+	private int printDbs (final ScreenWriter w, final int initialLine) {
+		int l = initialLine;
+		final Collection<MediaListReference> dbs = this.mnContext.getMediaFactory().getAllLocalMixedMediaDbs();
+		if (dbs.size() > 0) {
+			for (final MediaListReference db : dbs) {
+				w.drawString(1, l++, db.getTitle());
+			}
+		}
+		else {
+			w.drawString(1, l++, "(no DBs)");
+		}
+		return l;
 	}
 
 }
