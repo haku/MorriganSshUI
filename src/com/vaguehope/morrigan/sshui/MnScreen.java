@@ -47,8 +47,13 @@ public class MnScreen extends SshScreen {
 	private int printPlayers (final ScreenWriter w, final int initialLine) {
 		int l = initialLine;
 		final Collection<Player> players = this.mnContext.getPlayerReader().getPlayers();
-		for (final Player p : players) {
-			w.drawString(1, l++, String.format("%s\t%s %s %s", p.getId(), p.getName(), playerStateMsg(p), playingItemTitle(p)));
+		if (players.size() > 0) {
+			for (final Player p : players) {
+				w.drawString(1, l++, String.format("%s\t%s %s %s", p.getId(), p.getName(), playerStateMsg(p), playingItemTitle(p)));
+			}
+		}
+		else {
+			w.drawString(1, l++, "(no players)");
 		}
 		return l;
 	}
