@@ -44,7 +44,8 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 
 	@Override
 	public boolean backOneLevel () {
-		if (this.faces.removeLast() == null) {
+		this.faces.removeLast();
+		if (this.faces.isEmpty()) {
 			scheduleQuit();
 			return false;
 		}
