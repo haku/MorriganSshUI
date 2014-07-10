@@ -1,7 +1,7 @@
 Morrigan sshUI
 =============
 
-A plugin for [Morrigan](https://github.com/haku/Morrigan).
+A plugin for [Morrigan](https://github.com/haku/Morrigan) media player.
 Adds terminal UI served over ssh.
 
 Build
