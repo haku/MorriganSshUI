@@ -15,10 +15,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.media.MediaListReference;
-import com.vaguehope.morrigan.player.LocalPlayer;
-import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
-import com.vaguehope.morrigan.util.TimeHelper;
 
 public class HomeFace implements Face {
 
@@ -108,7 +105,12 @@ public class HomeFace implements Face {
 
 	private void menuEnter (final GUIScreen gui) {
 		if (this.selectedItem == null) return;
-		MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItem);
+		if (this.selectedItem instanceof Player) {
+			this.navigation.startFace(new PlayerFace(this.navigation, (Player) this.selectedItem));
+		}
+		else {
+			MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItem);
+		}
 	}
 
 	@Override
@@ -119,6 +121,8 @@ public class HomeFace implements Face {
 		l++;
 		w.drawString(0, l++, "DBs");
 		l = printDbs(w, l);
+
+		// TODO draw AsyncTasksRegister.
 	}
 
 	private int printPlayers (final ScreenWriter w, final int initialLine) {
@@ -126,7 +130,8 @@ public class HomeFace implements Face {
 		this.players = asList(this.mnContext.getPlayerReader().getPlayers());
 		if (this.players.size() > 0) {
 			for (final Player p : this.players) {
-				final String line = String.format("%s\t%s %s %s", p.getId(), p.getName(), playerStateMsg(p), playingItemTitle(p));
+				final String line = String.format("%s\t%s %s %s",
+						p.getId(), p.getName(), PlayerHelper.playerStateMsg(p), PlayerHelper.playingItemTitle(p));
 				if (p.equals(this.selectedItem)) {
 					w.drawString(1, l++, line, ScreenCharacterStyle.Reverse);
 				}
@@ -139,46 +144,6 @@ public class HomeFace implements Face {
 			w.drawString(1, l++, "(no players)");
 		}
 		return l;
-	}
-
-	private static String playerStateMsg (final Player p) {
-		final StringBuilder msg = new StringBuilder();
-		switch (p.getPlayState()) {
-			case PLAYING:
-				msg.append("Playing");
-				break;
-			case PAUSED:
-				msg.append("Paused");
-				break;
-			case LOADING:
-				msg.append("Loading");
-				break;
-			case STOPPED:
-				msg.append("Stopped");
-				break;
-			default:
-				msg.append("Unknown");
-				break;
-		}
-
-		final long currentPosition = p.getCurrentPosition();
-		if (currentPosition >= 0) {
-			final int currentTrackDuration = p.getCurrentTrackDuration();
-			msg.append(" ").append(TimeHelper.formatTimeSeconds(currentPosition));
-			if (currentTrackDuration > 0) {
-				msg.append(" of ").append(TimeHelper.formatTimeSeconds(currentTrackDuration));
-			}
-		}
-
-		if (p instanceof LocalPlayer && ((LocalPlayer) p).isProxy()) msg.append(" @ ").append(p.getName());
-		msg.append(".");
-
-		return msg.toString();
-	}
-
-	private static String playingItemTitle (final Player p) {
-		final PlayItem currentItem = p.getCurrentItem();
-		return currentItem != null && currentItem.hasTrack() ? currentItem.getTrack().getTitle() : "";
 	}
 
 	private int printDbs (final ScreenWriter w, final int initialLine) {
