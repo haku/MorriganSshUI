@@ -47,6 +47,12 @@ public class PlayerFace implements Face {
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
+					case ' ':
+						this.player.pausePlaying();
+						return true;
+					case 'n':
+						this.player.nextTrack();
+						return true;
 					case 'J':
 						moveQueueItemEnd(VDirection.DOWN);
 						return true;
