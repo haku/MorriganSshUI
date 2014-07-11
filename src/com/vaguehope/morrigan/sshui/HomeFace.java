@@ -54,7 +54,7 @@ public class HomeFace implements Face {
 					default:
 				}
 			default:
-				LOG.info("kind={} char={}", k.getKind(), String.valueOf((int) k.getCharacter()));
+				//LOG.info("kind={} c={} a={} char={}", k.getKind(), k.isCtrlPressed(), k.isAltPressed(), String.valueOf((int) k.getCharacter()));
 				return false;
 		}
 	}

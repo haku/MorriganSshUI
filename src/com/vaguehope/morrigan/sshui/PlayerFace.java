@@ -3,9 +3,6 @@ package com.vaguehope.morrigan.sshui;
 import java.util.Collections;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
@@ -18,8 +15,6 @@ import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 
 public class PlayerFace implements Face {
-
-	private static final Logger LOG = LoggerFactory.getLogger(PlayerFace.class);
 
 	private final FaceNavigation navigation;
 	private final Player player;
@@ -67,7 +62,6 @@ public class PlayerFace implements Face {
 					default:
 				}
 			default:
-				LOG.info("kind={} char={}", k.getKind(), String.valueOf((int) k.getCharacter()));
 				return false;
 		}
 	}
