@@ -16,6 +16,7 @@ import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.Player;
+import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 
 public class HomeFace implements Face {
 
@@ -59,35 +60,9 @@ public class HomeFace implements Face {
 	}
 
 	private void menuMove (final Key k) {
-		final int limit = sizeOf(this.players) + sizeOf(this.dbs);
-
-		int i = -1;
-		if (this.selectedItem != null) {
-			i = this.players.indexOf(this.selectedItem);
-			if (i < 0) {
-				i = this.dbs.indexOf(this.selectedItem);
-				if (i >= 0) i += sizeOf(this.players);
-			}
-		}
-
-		if (i < 0) {
-			i = 0;
-		}
-		else if (k.getKind() == Kind.ArrowUp) {
-			i--;
-			if (i < 0) i = 0;
-		}
-		else {
-			i++;
-			if (i >= limit) i = limit - 1;
-		}
-
-		if (i < sizeOf(this.players)) {
-			this.selectedItem = listGet(this.players, i);
-		}
-		else {
-			this.selectedItem = listGet(this.dbs, i - sizeOf(this.players));
-		}
+		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
+				k.getKind() == Kind.ArrowUp ? VDirection.UP : VDirection.DOWN,
+				this.players, this.dbs);
 	}
 
 	private void menuClick (final GUIScreen gui) {
@@ -165,18 +140,9 @@ public class HomeFace implements Face {
 		return l;
 	}
 
-	private static int sizeOf (final Collection<?> c) {
-		return c != null ? c.size() : 0;
-	}
-
 	private static <T> List<T> asList (final Collection<T> c) {
 		if (c instanceof List<?>) return (List<T>) c;
 		return new ArrayList<T>(c);
-	}
-
-	private static <T> T listGet (final List<T> list, final int i) {
-		if (list == null) return null;
-		return list.get(i);
 	}
 
 }
