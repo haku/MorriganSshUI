@@ -8,12 +8,14 @@ import org.apache.sshd.server.ExitCallback;
 
 import com.googlecode.lanterna.gui.DefaultBackgroundRenderer;
 import com.googlecode.lanterna.gui.GUIScreen;
+import com.googlecode.lanterna.gui.dialog.MessageBox;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.vaguehope.morrigan.sshui.Face.FaceNavigation;
 import com.vaguehope.morrigan.sshui.term.SshScreen;
+import com.vaguehope.morrigan.util.ErrorHelper;
 
 public class MnScreen extends SshScreen implements FaceNavigation {
 
@@ -55,7 +57,13 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 
 	@Override
 	protected boolean onInput (final Key k) {
-		return activeFace().onInput(k, this.gui);
+		try {
+			return activeFace().onInput(k, this.gui);
+		}
+		catch (final Exception e) {
+			MessageBox.showMessageBox(this.gui, e.getClass().getName(), ErrorHelper.getCauseTrace(e));
+			return true;
+		}
 	}
 
 	@Override

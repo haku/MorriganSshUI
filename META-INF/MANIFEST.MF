@@ -22,5 +22,6 @@ Import-Package: com.vaguehope.morrigan.config,
  com.vaguehope.morrigan.player,
  com.vaguehope.morrigan.tasks,
  com.vaguehope.morrigan.util,
+ com.vaguehope.sqlitewrapper,
  org.osgi.framework
 Export-Package: com.vaguehope.morrigan.sshui

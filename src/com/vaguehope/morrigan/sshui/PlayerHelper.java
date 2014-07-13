@@ -6,10 +6,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.morrigan.model.db.IDbColumn;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.DurationData;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
+import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.player.LocalPlayer;
 import com.vaguehope.morrigan.player.PlayItem;
@@ -70,7 +72,7 @@ public class PlayerHelper {
 					final List<MediaTag> tags = list.getTags(playItem.getTrack()); // TODO cache this?
 					return join(tags, ", ");
 				}
-				catch (MorriganException e) {
+				catch (final MorriganException e) {
 					LOG.warn("Failed to read tags: " + playItem, e);
 					return "(tags unavailable)";
 				}
@@ -87,6 +89,26 @@ public class PlayerHelper {
 				size,
 				d.isComplete() ? "" : "more than ",
 				TimeHelper.formatTimeSeconds(d.getDuration()));
+	}
+
+	public static String dbSummary (final IMixedMediaDb db) {
+		final StringBuilder msg = new StringBuilder();
+		msg.append(db.getCount());
+		msg.append(" items totaling ");
+		final DurationData d = db.getTotalDuration();
+		if (!d.isComplete()) {
+			msg.append("more than ");
+		}
+		msg.append(TimeHelper.formatTimeSeconds(d.getDuration()));
+		msg.append(".");
+		return msg.toString();
+	}
+
+	public static String sortSummary (final IMixedMediaDb db) {
+		IDbColumn col = db.getSort();
+		return String.format("%s, %s.",
+				col != null ? col.getHumanName() : "(unknown)",
+				db.getSortDirection());
 	}
 
 	private static String join (final Collection<?> arr, final String sep) {

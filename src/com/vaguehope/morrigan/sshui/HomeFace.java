@@ -14,9 +14,11 @@ import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
+import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.sqlitewrapper.DbException;
 
 public class HomeFace implements Face {
 
@@ -35,7 +37,7 @@ public class HomeFace implements Face {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) {
+	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
 
 		// TODO
 		// - New DB.
@@ -84,13 +86,13 @@ public class HomeFace implements Face {
 		}
 	}
 
-	private void menuEnter (final GUIScreen gui) {
+	private void menuEnter (final GUIScreen gui) throws DbException, MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof Player) {
 			this.navigation.startFace(new PlayerFace(this.navigation, (Player) this.selectedItem));
 		}
 		else if (this.selectedItem instanceof MediaListReference) {
-			this.navigation.startFace(new DbFace(this.navigation, (MediaListReference) this.selectedItem));
+			this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (MediaListReference) this.selectedItem));
 		}
 		else {
 			MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItem);

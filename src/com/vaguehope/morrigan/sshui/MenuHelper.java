@@ -9,6 +9,23 @@ public class MenuHelper {
 		UP, DOWN;
 	}
 
+	public static int moveListSelectionIndex (final int selectedIndex, final VDirection direction, final List<?> list) {
+		final int limit = sizeOf(list);
+		int i = selectedIndex;
+		if (i < 0) {
+			i = limit > 0 ? 0 : -1;
+		}
+		else if (direction == VDirection.UP) {
+			i--;
+			if (i < 0) i = 0;
+		}
+		else {
+			i++;
+			if (i >= limit) i = limit - 1;
+		}
+		return i;
+	}
+
 	/**
 	 * Returns new selected item.
 	 */
@@ -16,7 +33,7 @@ public class MenuHelper {
 		final int limit = sumSizes(lists);
 		int i = listOfListsIndexOf(selectedItem, lists);
 		if (i < 0) {
-			i = 0;
+			i = limit > 0 ? 0 : -1;
 		}
 		else if (direction == VDirection.UP) {
 			i--;

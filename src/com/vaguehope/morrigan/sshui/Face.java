@@ -18,7 +18,7 @@ public interface Face {
 
 	}
 
-	boolean onInput (Key k, GUIScreen gui);
+	boolean onInput (Key k, GUIScreen gui) throws Exception;
 
 	void writeScreen (Screen scr, ScreenWriter w);
 
