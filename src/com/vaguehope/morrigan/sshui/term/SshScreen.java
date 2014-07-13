@@ -20,7 +20,7 @@ import com.vaguehope.morrigan.sshui.util.Quietly;
 
 public abstract class SshScreen implements Runnable {
 
-	private static final long POLL_CYCLE = 100L;
+	private static final long POLL_CYCLE = 50L;
 	private static final long PRINT_CYCLE = 500L;
 	private static final long SHUTDOWN_TIMEOUT = 5000L;
 
