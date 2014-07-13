@@ -90,7 +90,7 @@ public class HomeFace implements Face {
 	private void menuEnter (final GUIScreen gui) throws DbException, MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof Player) {
-			this.navigation.startFace(new PlayerFace(this.navigation, (Player) this.selectedItem));
+			this.navigation.startFace(new PlayerFace(this.navigation, this.mnContext, (Player) this.selectedItem));
 		}
 		else if (this.selectedItem instanceof MediaListReference) {
 			this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (MediaListReference) this.selectedItem));

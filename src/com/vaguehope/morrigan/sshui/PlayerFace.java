@@ -6,20 +6,28 @@ import java.util.List;
 import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.ActionListDialog;
+import com.googlecode.lanterna.gui.dialog.MessageBox;
+import com.googlecode.lanterna.gui.dialog.TextInputDialog;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
+import com.vaguehope.morrigan.model.exceptions.MorriganException;
+import com.vaguehope.morrigan.model.media.IMediaTrack;
+import com.vaguehope.morrigan.model.media.IMediaTrackList;
+import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.player.OrderHelper.PlaybackOrder;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.sqlitewrapper.DbException;
 
 public class PlayerFace implements Face {
 
 	private final FaceNavigation navigation;
+	private final MnContext mnContext;
 	private final Player player;
 
 	private List<PlayItem> queue;
@@ -27,16 +35,16 @@ public class PlayerFace implements Face {
 	private int queueScrollTop = 0;
 	private int pageSize = 1;
 
-	public PlayerFace (final FaceNavigation navigation, final Player player) {
+	public PlayerFace (final FaceNavigation navigation, final MnContext mnContext, final Player player) {
 		this.navigation = navigation;
+		this.mnContext = mnContext;
 		this.player = player;
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) {
+	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
 
 		// TODO
-		// - pg up / down.
 		// - add / remove tags.
 		// - help screen.
 
@@ -70,6 +78,11 @@ public class PlayerFace implements Face {
 						return true;
 					case 'o':
 						askPlaybackOrder(gui);
+						return true;
+					case '/':
+					case 's':
+					case 'f':
+						askSearch(gui);
 						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
@@ -114,6 +127,24 @@ public class PlayerFace implements Face {
 			i++;
 		}
 		ActionListDialog.showActionListDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
+	}
+
+	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
+		if (list != null) {
+			if (list instanceof IMixedMediaDb) {
+				final String term = TextInputDialog.showTextInputBox(gui, "Search", "", "");
+				if (term != null) {
+					this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (IMixedMediaDb) list, term));
+				}
+			}
+			else {
+				MessageBox.showMessageBox(gui, "TODO", "Search: " + list);
+			}
+		}
+		else {
+			MessageBox.showMessageBox(gui, "Search", "No list selected.");
+		}
 	}
 
 	private void menuMove (final Key k, final int distance) {

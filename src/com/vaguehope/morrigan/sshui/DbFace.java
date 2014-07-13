@@ -7,6 +7,7 @@ import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.ActionListDialog;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
+import com.googlecode.lanterna.gui.dialog.TextInputDialog;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
@@ -23,9 +24,11 @@ import com.vaguehope.sqlitewrapper.DbException;
 
 public class DbFace implements Face {
 
+	private static final int MAX_SEARCH_RESULTS = 200;
+
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
-	private final MediaListReference listReference;
+	private final String searchTerm;
 	private final IMixedMediaDb db;
 
 	private List<IMixedMediaItem> mediaItems;
@@ -34,23 +37,47 @@ public class DbFace implements Face {
 	private int pageSize = 1;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
+		this(navigation, mnContext, listReference, null);
+	}
+
+	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference, final String searchTerm) throws DbException, MorriganException {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
-		this.listReference = listReference;
 
 		if (listReference.getType() == MediaListReference.MediaListType.LOCALMMDB) {
 			this.db = mnContext.getMediaFactory().getLocalMixedMediaDb(listReference.getIdentifier());
 			this.db.read();
+			refreshData();
 		}
 		else {
 			this.db = null;
 		}
+
+		this.searchTerm = searchTerm;
+	}
+
+	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final String searchTerm) throws DbException, MorriganException {
+		this.navigation = navigation;
+		this.mnContext = mnContext;
+		this.db = db;
+		this.searchTerm = searchTerm;
+		refreshData();
+	}
+
+	private void refreshData () throws DbException {
+		if (this.searchTerm != null) {
+			this.mediaItems = this.db.simpleSearch(this.searchTerm, MAX_SEARCH_RESULTS);
+		}
+		else {
+			this.mediaItems = this.db.getMediaItems();
+		}
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) {
+	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
 
 		// TODO
+		// - jump back all searches? (Q).
 		// - help screen.
 
 		switch (k.getKind()) {
@@ -85,8 +112,15 @@ public class DbFace implements Face {
 						menuMoveEnd(VDirection.DOWN);
 						return true;
 					case 'o':
-					case 's':
 						askSortColumn(gui);
+						return true;
+					case '/':
+					case 's':
+					case 'f':
+						askSearch(gui);
+						return true;
+					case 'r':
+						refreshData();
 						return true;
 					default:
 				}
@@ -128,6 +162,8 @@ public class DbFace implements Face {
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
+		if (this.searchTerm != null) return; // TODO Sort search results.
+
 		final List<IDbColumn> cols = this.db.getDbLayer().getMediaTblColumns();
 		final List<Action> actions = new ArrayList<Action>();
 		for (final IDbColumn col : cols) {
@@ -140,13 +176,21 @@ public class DbFace implements Face {
 				actions.toArray(new Action[actions.size()]));
 	}
 
+	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+		final String term = TextInputDialog.showTextInputBox(gui, "Search", "",
+				this.searchTerm != null ? this.searchTerm : "");
+		if (term != null) {
+			this.navigation.startFace(new DbFace(this.navigation, this.mnContext, this.db, term));
+		}
+	}
+
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		if (this.db != null) {
 			writeDbToScreen(scr, w);
 		}
 		else {
-			w.drawString(0, 0, "Unable to show " + this.listReference);
+			w.drawString(0, 0, "Unable to show " + this.db.getListName());
 		}
 	}
 
@@ -154,8 +198,6 @@ public class DbFace implements Face {
 		int l = 0;
 		w.drawString(0, l++, String.format("DB %s: %s   %s",
 				this.db.getListName(), PlayerHelper.dbSummary(this.db), PlayerHelper.sortSummary(this.db)));
-
-		this.mediaItems = this.db.getMediaItems();
 
 		this.pageSize = scr.getTerminalSize().getRows() - l;
 		if (this.selectedItemIndex >= 0) {
@@ -202,8 +244,7 @@ public class DbFace implements Face {
 				this.db.setSort(this.col, this.direction);
 			}
 			catch (final MorriganException e) {
-				// TODO Auto-generated catch block
-				throw new RuntimeException(e);
+				throw new IllegalStateException(e);
 			}
 		}
 
