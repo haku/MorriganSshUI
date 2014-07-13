@@ -167,7 +167,7 @@ public class PlayerFace implements Face {
 		final int height = scr.getTerminalSize().getRows() - l;
 		final int selI = this.queue.indexOf(this.selectedItem);
 		if (selI >= 0) {
-			if (selI > this.queueScrollTop && selI - this.queueScrollTop > height) {
+			if (selI - this.queueScrollTop >= height) {
 				this.queueScrollTop = selI - height + 1;
 			}
 			else if (selI < this.queueScrollTop) {
@@ -176,6 +176,7 @@ public class PlayerFace implements Face {
 		}
 
 		for (int i = this.queueScrollTop; i < this.queue.size(); i++) {
+			if (i > this.queueScrollTop + height) break;
 			final PlayItem item = this.queue.get(i);
 			if (item.equals(this.selectedItem)) {
 				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
