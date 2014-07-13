@@ -47,7 +47,7 @@ public class HomeFace implements Face {
 		switch (k.getKind()) {
 			case ArrowUp:
 			case ArrowDown:
-				menuMove(k);
+				menuMove(k, 1);
 				return true;
 			case Enter:
 				menuEnter(gui);
@@ -67,9 +67,10 @@ public class HomeFace implements Face {
 		}
 	}
 
-	private void menuMove (final Key k) {
+	private void menuMove (final Key k, final int distance) {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
 				k.getKind() == Kind.ArrowUp ? VDirection.UP : VDirection.DOWN,
+				distance,
 				this.players, this.dbs);
 	}
 

@@ -25,6 +25,7 @@ public class PlayerFace implements Face {
 	private List<PlayItem> queue;
 	private Object selectedItem;
 	private int queueScrollTop = 0;
+	private int pageSize = 1;
 
 	public PlayerFace (final FaceNavigation navigation, final Player player) {
 		this.navigation = navigation;
@@ -35,13 +36,18 @@ public class PlayerFace implements Face {
 	public boolean onInput (final Key k, final GUIScreen gui) {
 
 		// TODO
+		// - pg up / down.
 		// - add / remove tags.
 		// - help screen.
 
 		switch (k.getKind()) {
 			case ArrowUp:
 			case ArrowDown:
-				menuMove(k);
+				menuMove(k, 1);
+				return true;
+			case PageUp:
+			case PageDown:
+				menuMove(k, this.pageSize - 1);
 				return true;
 			case Home:
 				menuMoveEnd(VDirection.UP);
@@ -110,9 +116,12 @@ public class PlayerFace implements Face {
 		ActionListDialog.showActionListDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
 	}
 
-	private void menuMove (final Key k) {
+	private void menuMove (final Key k, final int distance) {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
-				k.getKind() == Kind.ArrowUp ? VDirection.UP : VDirection.DOWN,
+				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+						? VDirection.UP
+						: VDirection.DOWN,
+				distance,
 				this.queue);
 	}
 
@@ -164,11 +173,11 @@ public class PlayerFace implements Face {
 
 		this.queue = pq.getQueueList();
 
-		final int height = scr.getTerminalSize().getRows() - l;
+		this.pageSize = scr.getTerminalSize().getRows() - l;
 		final int selI = this.queue.indexOf(this.selectedItem);
 		if (selI >= 0) {
-			if (selI - this.queueScrollTop >= height) {
-				this.queueScrollTop = selI - height + 1;
+			if (selI - this.queueScrollTop >= this.pageSize) {
+				this.queueScrollTop = selI - this.pageSize + 1;
 			}
 			else if (selI < this.queueScrollTop) {
 				this.queueScrollTop = selI;
@@ -176,7 +185,7 @@ public class PlayerFace implements Face {
 		}
 
 		for (int i = this.queueScrollTop; i < this.queue.size(); i++) {
-			if (i > this.queueScrollTop + height) break;
+			if (i > this.queueScrollTop + this.pageSize) break;
 			final PlayItem item = this.queue.get(i);
 			if (item.equals(this.selectedItem)) {
 				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);

@@ -29,18 +29,18 @@ public class MenuHelper {
 	/**
 	 * Returns new selected item.
 	 */
-	public static Object moveListSelection (final Object selectedItem, final VDirection direction, final List<?>... lists) {
+	public static Object moveListSelection (final Object selectedItem, final VDirection direction, final int distance, final List<?>... lists) {
 		final int limit = sumSizes(lists);
 		int i = listOfListsIndexOf(selectedItem, lists);
 		if (i < 0) {
 			i = limit > 0 ? 0 : -1;
 		}
 		else if (direction == VDirection.UP) {
-			i--;
+			i -= distance;
 			if (i < 0) i = 0;
 		}
 		else {
-			i++;
+			i += distance;
 			if (i >= limit) i = limit - 1;
 		}
 		return listOfListsGet(i, lists);
