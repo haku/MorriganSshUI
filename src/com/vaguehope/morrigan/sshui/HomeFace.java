@@ -19,6 +19,12 @@ import com.vaguehope.sqlitewrapper.DbException;
 
 public class HomeFace implements Face {
 
+	private static final String HELP_TEXT =
+			"      g\tgo to top of list\n" +
+			"      G\tgo to end of list\n" +
+			"<space>\tplay / pause\n" +
+			"      h\tthis help text";
+
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 
@@ -57,6 +63,9 @@ public class HomeFace implements Face {
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
+					case 'h':
+						this.navigation.startFace(new HelpFace(this.navigation, HELP_TEXT));
+						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
 						return true;

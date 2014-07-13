@@ -26,6 +26,20 @@ import com.vaguehope.sqlitewrapper.DbException;
 
 public class PlayerFace implements Face {
 
+	private static final String HELP_TEXT =
+			" <space>\tplay / pause\n" +
+			"       n\tnext track\n" +
+			"       o\tplayback order\n" +
+			"       /\tsearch DB\n" +
+			"       g\tgo to top of list\n" +
+			"       G\tgo to end of list\n" +
+			"<delete>\tremove from queue\n" +
+			"       K\tmove to top of queue\n" +
+			"       k\tmove up in queue\n" +
+			"       j\tmove down in queue\n" +
+			"       J\tmove to bottom of queue\n" +
+			"       h\tthis help text";
+
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final Player player;
@@ -70,6 +84,9 @@ public class PlayerFace implements Face {
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
+					case 'h':
+						this.navigation.startFace(new HelpFace(this.navigation, HELP_TEXT));
+						return true;
 					case ' ':
 						this.player.pausePlaying();
 						return true;

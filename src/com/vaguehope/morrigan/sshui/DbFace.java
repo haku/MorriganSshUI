@@ -27,6 +27,15 @@ import com.vaguehope.sqlitewrapper.DbException;
 
 public class DbFace implements Face {
 
+	private static final String HELP_TEXT =
+			"      g\tgo to top of list\n" +
+			"      G\tgo to end of list\n" +
+			"      /\tsearch DB\n" +
+			"      o\tsort order\n" +
+			"      e\tenqueue item\n" +
+			"      r\trefresh query\n" +
+			"      h\tthis help text";
+
 	private static final int MAX_SEARCH_RESULTS = 200;
 	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
 
@@ -113,6 +122,9 @@ public class DbFace implements Face {
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
+					case 'h':
+						this.navigation.startFace(new HelpFace(this.navigation, HELP_TEXT));
+						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
 						return true;
@@ -191,6 +203,7 @@ public class DbFace implements Face {
 					public String toString () {
 						return player.getName();
 					}
+
 					@Override
 					public void doAction () {
 						enqueueItem(item, player);
