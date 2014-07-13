@@ -1,5 +1,6 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.util.Deque;
 import java.util.LinkedList;
 
 import org.apache.sshd.server.Environment;
@@ -16,7 +17,7 @@ import com.vaguehope.morrigan.sshui.term.SshScreen;
 
 public class MnScreen extends SshScreen implements FaceNavigation {
 
-	private final LinkedList<Face> faces = new LinkedList<Face>();
+	private final Deque<Face> faces = new LinkedList<Face>();
 	private final MnContext mnContext;
 	private GUIScreen gui;
 
@@ -44,11 +45,11 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 
 	@Override
 	public boolean backOneLevel () {
-		this.faces.removeLast();
-		if (this.faces.isEmpty()) {
+		if (this.faces.size() <= 1) {
 			scheduleQuit();
 			return false;
 		}
+		this.faces.removeLast();
 		return true;
 	}
 
