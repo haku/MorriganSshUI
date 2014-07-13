@@ -30,7 +30,11 @@ public class PlayerFace implements Face {
 	@Override
 	public boolean onInput (final Key k, final GUIScreen gui) {
 
-		// TODO lots of key cmds.
+		// TODO
+		// - play order change.
+		// - add / remove tags.
+		// - help screen.
+		// - Scrolling.
 
 		switch (k.getKind()) {
 			case ArrowUp:
@@ -42,6 +46,9 @@ public class PlayerFace implements Face {
 				return true;
 			case End:
 				moveQueueItemEnd(VDirection.DOWN);
+				return true;
+			case Delete:
+				deleteQueueItem();
 				return true;
 			case NormalKey:
 				switch (k.getCharacter()) {
@@ -92,17 +99,26 @@ public class PlayerFace implements Face {
 		}
 	}
 
+	private void deleteQueueItem () {
+		if (this.selectedItem == null) return;
+		if (this.selectedItem instanceof PlayItem) {
+			this.player.getQueue().removeFromQueue((PlayItem) this.selectedItem);
+		}
+	}
+
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		int l = 0;
 		w.drawString(0, l++, String.format("Player %s: %s   %s",
 				this.player.getId(), this.player.getName(), PlayerHelper.playerStateMsg(this.player)));
+		// TODO play order show.
 		w.drawString(1, l++, PlayerHelper.playingItemTitle(this.player));
 		w.drawString(1, l++, PlayerHelper.summariseTags(this.player));
 		final PlayerQueue pq = this.player.getQueue();
 		w.drawString(0, l++, PlayerHelper.queueSummary(pq));
 		this.queue = pq.getQueueList();
 		for (final PlayItem item : this.queue) {
+			// TODO Stop if over edge of screen.
 			if (item.equals(this.selectedItem)) {
 				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
 			}
