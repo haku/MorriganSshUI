@@ -31,6 +31,7 @@ public class DbFace implements Face {
 	private List<IMixedMediaItem> mediaItems;
 	private int selectedItemIndex;
 	private int queueScrollTop = 0;
+	private int pageSize = 1;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
 		this.navigation = navigation;
@@ -50,13 +51,16 @@ public class DbFace implements Face {
 	public boolean onInput (final Key k, final GUIScreen gui) {
 
 		// TODO
-		// - pg up / down.
 		// - help screen.
 
 		switch (k.getKind()) {
 			case ArrowUp:
 			case ArrowDown:
-				menuMove(k);
+				menuMove(k, 1);
+				return true;
+			case PageUp:
+			case PageDown:
+				menuMove(k, this.pageSize - 1);
 				return true;
 			case Home:
 				menuMoveEnd(VDirection.UP);
@@ -91,9 +95,12 @@ public class DbFace implements Face {
 		}
 	}
 
-	private void menuMove (final Key k) {
+	private void menuMove (final Key k, final int distance) {
 		this.selectedItemIndex = MenuHelper.moveListSelectionIndex(this.selectedItemIndex,
-				k.getKind() == Kind.ArrowUp ? VDirection.UP : VDirection.DOWN,
+				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+						? VDirection.UP
+						: VDirection.DOWN,
+				distance,
 				this.mediaItems);
 	}
 
@@ -150,10 +157,10 @@ public class DbFace implements Face {
 
 		this.mediaItems = this.db.getMediaItems();
 
-		final int height = scr.getTerminalSize().getRows() - l;
+		this.pageSize = scr.getTerminalSize().getRows() - l;
 		if (this.selectedItemIndex >= 0) {
-			if (this.selectedItemIndex - this.queueScrollTop >= height) {
-				this.queueScrollTop = this.selectedItemIndex - height + 1;
+			if (this.selectedItemIndex - this.queueScrollTop >= this.pageSize) {
+				this.queueScrollTop = this.selectedItemIndex - this.pageSize + 1;
 			}
 			else if (this.selectedItemIndex < this.queueScrollTop) {
 				this.queueScrollTop = this.selectedItemIndex;
@@ -161,7 +168,7 @@ public class DbFace implements Face {
 		}
 
 		for (int i = this.queueScrollTop; i < this.mediaItems.size(); i++) {
-			if (i > this.queueScrollTop + height) break;
+			if (i > this.queueScrollTop + this.pageSize) break;
 			final IMixedMediaItem item = this.mediaItems.get(i);
 			if (i == this.selectedItemIndex) {
 				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
