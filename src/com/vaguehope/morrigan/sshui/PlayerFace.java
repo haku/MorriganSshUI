@@ -129,13 +129,13 @@ public class PlayerFace implements Face {
 		ActionListDialog.showActionListDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
 	}
 
-	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+	private void askSearch (final GUIScreen gui) throws DbException {
 		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
 				final String term = TextInputDialog.showTextInputBox(gui, "Search", "", "");
 				if (term != null) {
-					this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (IMixedMediaDb) list, term));
+					this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (IMixedMediaDb) list, this.player, term));
 				}
 			}
 			else {
@@ -188,7 +188,13 @@ public class PlayerFace implements Face {
 		if (this.selectedItem instanceof PlayItem && this.queue != null) {
 			final int i = this.queue.indexOf(this.selectedItem);
 			this.player.getQueue().removeFromQueue((PlayItem) this.selectedItem);
-			if (i >= 0) this.selectedItem = this.queue.get(i);
+			if (i >= this.queue.size()) { // Last item was deleted.
+				this.queue = this.player.getQueue().getQueueList();
+				this.selectedItem = this.queue.get(this.queue.size() - 1);
+			}
+			else if (i >= 0) {
+				this.selectedItem = this.queue.get(i);
+			}
 		}
 	}
 
