@@ -188,6 +188,10 @@ public class DbFace implements Face {
 			for (final Player player : players) {
 				actions.add(new Action() {
 					@Override
+					public String toString () {
+						return player.getName();
+					}
+					@Override
 					public void doAction () {
 						enqueueItem(item, player);
 					}
