@@ -136,6 +136,7 @@ public class HomeFace implements Face {
 		this.players = asList(this.mnContext.getPlayerReader().getPlayers());
 		if (this.players.size() > 0) {
 			for (final Player p : this.players) {
+				if (p.isDisposed()) continue;
 				final String line = String.format("%s\t%s %s %s",
 						p.getId(), p.getName(), PlayerHelper.playerStateMsg(p), PlayerHelper.playingItemTitle(p));
 				if (p.equals(this.selectedItem)) {
