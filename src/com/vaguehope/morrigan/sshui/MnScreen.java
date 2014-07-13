@@ -5,6 +5,8 @@ import java.util.LinkedList;
 
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.gui.DefaultBackgroundRenderer;
 import com.googlecode.lanterna.gui.GUIScreen;
@@ -18,6 +20,8 @@ import com.vaguehope.morrigan.sshui.term.SshScreen;
 import com.vaguehope.morrigan.util.ErrorHelper;
 
 public class MnScreen extends SshScreen implements FaceNavigation {
+
+	private static final Logger LOG = LoggerFactory.getLogger(MnScreen.class);
 
 	private final Deque<Face> faces = new LinkedList<Face>();
 	private final MnContext mnContext;
@@ -61,6 +65,7 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 			return activeFace().onInput(k, this.gui);
 		}
 		catch (final Exception e) {
+			LOG.error("Unhandled exception while processing user input.", e);
 			MessageBox.showMessageBox(this.gui, e.getClass().getName(), ErrorHelper.getCauseTrace(e));
 			return true;
 		}
