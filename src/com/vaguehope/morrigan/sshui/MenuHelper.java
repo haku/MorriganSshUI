@@ -75,12 +75,12 @@ public class MenuHelper {
 		return null;
 	}
 
-	private static int sizeOf (final Collection<?> c) {
+	public static int sizeOf (final Collection<?> c) {
 		return c != null ? c.size() : 0;
 	}
 
-	private static <T> T listGet (final List<T> list, final int i) {
-		if (list == null) return null;
+	public static <T> T listGet (final List<T> list, final int i) {
+		if (list == null || i < 0) return null;
 		return list.get(i);
 	}
 

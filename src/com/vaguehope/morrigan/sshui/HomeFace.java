@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
 import com.googlecode.lanterna.input.Key;
@@ -21,8 +18,6 @@ import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class HomeFace implements Face {
-
-	private static final Logger LOG = LoggerFactory.getLogger(HomeFace.class);
 
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
@@ -49,16 +44,28 @@ public class HomeFace implements Face {
 			case ArrowDown:
 				menuMove(k, 1);
 				return true;
+			case Home:
+				menuMoveEnd(VDirection.UP);
+				return true;
+			case End:
+				menuMoveEnd(VDirection.DOWN);
+				return true;
 			case Enter:
 				menuEnter(gui);
 				return true;
 			case NormalKey:
 				switch (k.getCharacter()) {
+					case 'q':
+						return this.navigation.backOneLevel();
+					case 'g':
+						menuMoveEnd(VDirection.UP);
+						return true;
+					case 'G':
+						menuMoveEnd(VDirection.DOWN);
+						return true;
 					case ' ':
 						menuClick(gui);
 						return true;
-					case 'q':
-						return this.navigation.backOneLevel();
 					default:
 				}
 			default:
@@ -72,6 +79,18 @@ public class HomeFace implements Face {
 				k.getKind() == Kind.ArrowUp ? VDirection.UP : VDirection.DOWN,
 				distance,
 				this.players, this.dbs);
+	}
+
+	private void menuMoveEnd (final VDirection direction) {
+		switch (direction) {
+			case UP:
+				this.selectedItem = MenuHelper.listGet(this.players, 0);
+				break;
+			case DOWN:
+				this.selectedItem = MenuHelper.listGet(this.dbs, MenuHelper.sizeOf(this.dbs) - 1);
+				break;
+			default:
+		}
 	}
 
 	private void menuClick (final GUIScreen gui) {
