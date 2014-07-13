@@ -36,6 +36,12 @@ public class HomeFace implements Face {
 
 	@Override
 	public boolean onInput (final Key k, final GUIScreen gui) {
+
+		// TODO
+		// - New DB.
+		// - Scrolling.
+		// - help screen.
+
 		switch (k.getKind()) {
 			case ArrowUp:
 			case ArrowDown:
@@ -71,7 +77,7 @@ public class HomeFace implements Face {
 			((Player) this.selectedItem).pausePlaying();
 		}
 		else if (this.selectedItem instanceof MediaListReference) {
-			MessageBox.showMessageBox(gui, "TODO", "Clicked: " + this.selectedItem);
+//			MessageBox.showMessageBox(gui, "TODO", "Clicked: " + this.selectedItem);
 		}
 		else {
 			MessageBox.showMessageBox(gui, "Error", "Unknown type: " + this.selectedItem);
@@ -82,6 +88,9 @@ public class HomeFace implements Face {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof Player) {
 			this.navigation.startFace(new PlayerFace(this.navigation, (Player) this.selectedItem));
+		}
+		else if (this.selectedItem instanceof MediaListReference) {
+			this.navigation.startFace(new DbFace(this.navigation, (MediaListReference) this.selectedItem));
 		}
 		else {
 			MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItem);
