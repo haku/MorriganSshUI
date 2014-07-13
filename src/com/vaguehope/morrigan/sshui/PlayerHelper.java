@@ -106,7 +106,7 @@ public class PlayerHelper {
 
 	public static String sortSummary (final IMixedMediaDb db) {
 		IDbColumn col = db.getSort();
-		return String.format("%s, %s.",
+		return String.format("%s %s.",
 				col != null ? col.getHumanName() : "(unknown)",
 				db.getSortDirection());
 	}

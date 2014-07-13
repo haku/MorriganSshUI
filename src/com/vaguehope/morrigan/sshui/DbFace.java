@@ -1,14 +1,20 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
+import com.googlecode.lanterna.gui.dialog.ActionListDialog;
+import com.googlecode.lanterna.gui.dialog.MessageBox;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
+import com.vaguehope.morrigan.model.db.IDbColumn;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
+import com.vaguehope.morrigan.model.media.IMediaItemStorageLayer.SortDirection;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMixedMediaItem;
 import com.vaguehope.morrigan.model.media.MediaListReference;
@@ -58,15 +64,25 @@ public class DbFace implements Face {
 			case End:
 				menuMoveEnd(VDirection.DOWN);
 				return true;
+			case Enter:
+				menuEnter(gui);
+				return true;
 			case NormalKey:
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
+					case ' ':
+						menuClick(gui);
+						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
 						return true;
 					case 'G':
 						menuMoveEnd(VDirection.DOWN);
+						return true;
+					case 'o':
+					case 's':
+						askSortColumn(gui);
 						return true;
 					default:
 				}
@@ -92,6 +108,29 @@ public class DbFace implements Face {
 				break;
 			default:
 		}
+	}
+
+	private void menuClick (final GUIScreen gui) {
+		if (this.selectedItemIndex < 0) return;
+		MessageBox.showMessageBox(gui, "TODO", "Click: " + this.selectedItemIndex);
+	}
+
+	private void menuEnter (final GUIScreen gui) {
+		if (this.selectedItemIndex < 0) return;
+		MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItemIndex);
+	}
+
+	private void askSortColumn (final GUIScreen gui) {
+		final List<IDbColumn> cols = this.db.getDbLayer().getMediaTblColumns();
+		final List<Action> actions = new ArrayList<Action>();
+		for (final IDbColumn col : cols) {
+			if (col.getHumanName() != null) {
+				actions.add(new SortColumnAction(this.db, col, SortDirection.ASC));
+				actions.add(new SortColumnAction(this.db, col, SortDirection.DESC));
+			}
+		}
+		ActionListDialog.showActionListDialog(gui, "Sort Order", "Current: " + PlayerHelper.sortSummary(this.db),
+				actions.toArray(new Action[actions.size()]));
 	}
 
 	@Override
@@ -131,6 +170,36 @@ public class DbFace implements Face {
 				w.drawString(1, l++, String.valueOf(item));
 			}
 		}
+	}
+
+	private static class SortColumnAction implements Action {
+
+		private final IMixedMediaDb db;
+		private final IDbColumn col;
+		private final SortDirection direction;
+
+		public SortColumnAction (final IMixedMediaDb db, final IDbColumn col, final SortDirection direction) {
+			this.db = db;
+			this.col = col;
+			this.direction = direction;
+		}
+
+		@Override
+		public String toString () {
+			return String.format("%s %s", this.col.getHumanName(), this.direction);
+		}
+
+		@Override
+		public void doAction () {
+			try {
+				this.db.setSort(this.col, this.direction);
+			}
+			catch (final MorriganException e) {
+				// TODO Auto-generated catch block
+				throw new RuntimeException(e);
+			}
+		}
+
 	}
 
 }
