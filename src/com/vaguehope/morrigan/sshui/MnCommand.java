@@ -65,7 +65,7 @@ public class MnCommand implements Command, SessionAware {
 	@Override
 	public void destroy () {
 		if (this.screen == null) throw new IllegalStateException();
-		this.screen.stopAndJoin();
+		this.screen.stopAndJoin("sshd destoyed command");
 	}
 
 }

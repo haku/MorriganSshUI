@@ -46,13 +46,13 @@ public abstract class SshScreen implements Runnable {
 		this.screenWriter = new ScreenWriter(this.screen);
 	}
 
-	public void stopAndJoin () {
-		scheduleQuit();
+	public void stopAndJoin (final String reason) {
+		scheduleQuit(reason);
 		Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 	}
 
-	protected void scheduleQuit () {
-		if (this.alive) LOG.info("Killing session {}...", this.name);
+	protected void scheduleQuit (final String reason) {
+		if (this.alive) LOG.info("Killing session {}: {} ...", this.name, reason);
 		this.alive = false;
 	}
 
@@ -80,7 +80,7 @@ public abstract class SshScreen implements Runnable {
 		}
 		catch (final Throwable t) {
 			LOG.error("Session error.", t);
-			scheduleQuit();
+			scheduleQuit("session error");
 		}
 		finally {
 			this.screen.stopScreen();

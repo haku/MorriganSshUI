@@ -55,7 +55,7 @@ public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBack
 	@Override
 	public boolean backOneLevel () {
 		if (this.faces.size() <= 1) {
-			scheduleQuit();
+			scheduleQuit("user quit");
 			return false;
 		}
 		this.faces.removeLast();
