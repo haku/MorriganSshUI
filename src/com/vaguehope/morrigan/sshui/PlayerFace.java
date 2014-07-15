@@ -206,7 +206,12 @@ public class PlayerFace extends DefaultFace {
 			this.player.getQueue().removeFromQueue((PlayItem) this.selectedItem);
 			if (i >= this.queue.size()) { // Last item was deleted.
 				this.queue = this.player.getQueue().getQueueList();
-				this.selectedItem = this.queue.get(this.queue.size() - 1);
+				if (this.queue.size() > 0) {
+					this.selectedItem = this.queue.get(this.queue.size() - 1);
+				}
+				else {
+					this.selectedItem = null;
+				}
 			}
 			else if (i >= 0) {
 				this.selectedItem = this.queue.get(i);
