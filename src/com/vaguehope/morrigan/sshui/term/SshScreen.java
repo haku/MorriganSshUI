@@ -34,6 +34,7 @@ public abstract class SshScreen implements Runnable {
 	private volatile boolean alive = true;
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 	private boolean inited = false;
+	private long threadId;
 	private long lastPrint = 0L;
 	private long lastWipe = 0L;
 
@@ -48,7 +49,9 @@ public abstract class SshScreen implements Runnable {
 
 	public void stopAndJoin (final String reason) {
 		scheduleQuit(reason);
-		Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+		if (this.threadId != Thread.currentThread().getId()) {
+			Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+		}
 	}
 
 	protected void scheduleQuit (final String reason) {
@@ -63,6 +66,7 @@ public abstract class SshScreen implements Runnable {
 	private void init () {
 		if (!this.inited) {
 			this.inited = true; // Only try once.
+			this.threadId = Thread.currentThread().getId();
 			this.screen.startScreen();
 			initScreen(this.screen);
 			LOG.info("Session created: {}", this.name);
