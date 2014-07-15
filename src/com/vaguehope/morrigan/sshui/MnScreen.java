@@ -95,7 +95,7 @@ public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBack
 
 	@Override
 	public void drawBackground (final TextGraphics tg) {
-		printScreen();
+		printScreen(false);
 	}
 
 }

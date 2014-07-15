@@ -17,8 +17,9 @@ import com.vaguehope.morrigan.sshui.util.Quietly;
 
 public abstract class SshScreen implements Runnable {
 
-	private static final long PRINT_CYCLE = 500L;
-	private static final long SHUTDOWN_TIMEOUT = 5000L;
+	private static final long PRINT_CYCLE_NANOS = TimeUnit.MILLISECONDS.toNanos(500L);
+	private static final long WIPE_CYCLE_NANOS = TimeUnit.SECONDS.toNanos(5L);
+	private static final long SHUTDOWN_TIMEOUT_MILLIS = TimeUnit.SECONDS.toNanos(5L);
 
 	private static final Logger LOG = LoggerFactory.getLogger(SshScreen.class);
 
@@ -34,6 +35,7 @@ public abstract class SshScreen implements Runnable {
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 	private boolean inited = false;
 	private long lastPrint = 0L;
+	private long lastWipe = 0L;
 
 	public SshScreen (final String name, final Environment env, final Terminal terminal, final ExitCallback callback) {
 		this.name = name;
@@ -46,7 +48,7 @@ public abstract class SshScreen implements Runnable {
 
 	public void stopAndJoin () {
 		scheduleQuit();
-		Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
+		Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 	}
 
 	protected void scheduleQuit () {
@@ -90,27 +92,39 @@ public abstract class SshScreen implements Runnable {
 	}
 
 	private void tick () {
-		if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
-			printScreen();
-			this.lastPrint = System.currentTimeMillis();
-		}
+		final long now = System.nanoTime();
+		if (readInput() || now - this.lastPrint > PRINT_CYCLE_NANOS) {
 
+			// FIXME this is a hack for unicode characters not clearing.
+			boolean completeRefresh = false;
+			if (now - this.lastWipe > WIPE_CYCLE_NANOS) {
+				completeRefresh = true;
+				this.lastWipe = now;
+			}
+
+			printScreen(completeRefresh);
+			this.lastPrint = now;
+		}
 	}
 
 	private boolean readInput () {
 		boolean changed = false;
 		Key k;
 		while ((k = this.terminal.readInput()) != null) {
-			changed = onInput(k);
+			changed = onInput(k) || changed;
 		}
 		return changed;
 	}
 
-	protected void printScreen () {
+	protected void printScreen (final boolean completeRefresh) {
 		if (this.screen.resizePending()) {
 			this.screenWriter.fillScreen(' ');
 			this.screen.refresh();
 		}
+		else if (completeRefresh) {
+			this.screen.completeRefresh();
+		}
+
 		this.screen.clear();
 		writeScreen(this.screen, this.screenWriter);
 		this.screen.refresh();
