@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
+import com.googlecode.lanterna.gui.dialog.TextInputDialog;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
@@ -24,7 +25,8 @@ public class HomeFace extends DefaultFace {
 	private static final String HELP_TEXT =
 			"      g\tgo to top of list\n" +
 			"      G\tgo to end of list\n" +
-			"<space>\tplay / pause\n" +
+			"<space>\tplay / pause selected player\n" +
+			"      n\tcreate new DB\n" +
 			"      h\tthis help text";
 
 	private static final long DATA_REFRESH_MILLIS = 500L;
@@ -95,6 +97,9 @@ public class HomeFace extends DefaultFace {
 					case ' ':
 						menuClick(gui);
 						return true;
+					case 'n':
+						askNewDb(gui);
+						return true;
 					default:
 				}
 			default:
@@ -148,6 +153,14 @@ public class HomeFace extends DefaultFace {
 		}
 	}
 
+	private void askNewDb (final GUIScreen gui) throws MorriganException {
+		final String name = TextInputDialog.showTextInputBox(gui, "New DB", "Enter name:", "", 50);
+		if (name != null && name.length() > 0) {
+			this.mnContext.getMediaFactory().createLocalMixedMediaDb(name);
+			refreshData();
+		}
+	}
+
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		refreshStateData();
@@ -165,8 +178,6 @@ public class HomeFace extends DefaultFace {
 
 		w.drawString(0, l++, "DBs");
 		l = printDbs(w, l);
-
-		// TODO draw AsyncTasksRegister.
 	}
 
 	private int printPlayers (final ScreenWriter w, final int initialLine) {
