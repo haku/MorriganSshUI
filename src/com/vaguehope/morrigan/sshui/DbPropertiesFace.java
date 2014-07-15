@@ -16,38 +16,50 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
+import com.vaguehope.morrigan.model.media.ILocalMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.morrigan.tasks.MorriganTask;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class DbPropertiesFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
 			"       g\tgo to top of list\n" +
-			"       G\tgo to end of list\n" +
-			"       r\trefresh\n" +
-			"       n\tadd new source\n" +
-			"<delete>\tremove source\n" +
-			"       h\tthis help text";
-
+					"       G\tgo to end of list\n" +
+					"       r\trefresh\n" +
+					"       n\tadd new source\n" +
+					"<delete>\tremove source\n" +
+					"       u\trescan sources\n" +
+					"       h\tthis help text";
+	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
 	private static final Logger LOG = LoggerFactory.getLogger(DbPropertiesFace.class);
 
 	private final FaceNavigation navigation;
+	private final MnContext mnContext;
 	private final IMixedMediaDb db;
 
 	private List<String> sources;
 	private Object selectedItem;
 	private int queueScrollTop = 0;
 	private int pageSize = 1;
+	private String lastActionMessage = null;
+	private long lastActionMessageTime = 0;
 
-	public DbPropertiesFace (final FaceNavigation navigation, final IMixedMediaDb db) throws MorriganException {
+	public DbPropertiesFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db) throws MorriganException {
 		this.navigation = navigation;
+		this.mnContext = mnContext;
 		this.db = db;
 		refreshData();
 	}
 
 	private void refreshData () throws MorriganException {
 		this.sources = this.db.getSources();
+	}
+
+	protected void setLastActionMessage (final String lastActionMessage) {
+		this.lastActionMessage = lastActionMessage;
+		this.lastActionMessageTime = System.currentTimeMillis();
 	}
 
 	@Override
@@ -88,6 +100,9 @@ public class DbPropertiesFace extends DefaultFace {
 						return true;
 					case 'n':
 						askAddSource();
+						return true;
+					case 'u':
+						rescanSources();
 						return true;
 					default:
 				}
@@ -151,6 +166,22 @@ public class DbPropertiesFace extends DefaultFace {
 		}
 	}
 
+	private void rescanSources () {
+		if (this.db instanceof ILocalMixedMediaDb) {
+			final MorriganTask task = this.mnContext.getMediaFactory().getLocalMixedMediaDbUpdateTask((ILocalMixedMediaDb) this.db);
+			if (task != null) {
+				this.mnContext.getAsyncTasksRegister().scheduleTask(task);
+				setLastActionMessage("Update started.");
+			}
+			else {
+				setLastActionMessage("Unable to start update, one may already be in progress.");
+			}
+		}
+		else {
+			setLastActionMessage("Do not know how to refresh: " + this.db);
+		}
+	}
+
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		if (this.db != null) {
@@ -164,6 +195,16 @@ public class DbPropertiesFace extends DefaultFace {
 	private void writeDbPropsToScreen (final Screen scr, final ScreenWriter w) {
 		int l = 0;
 		w.drawString(0, l++, String.format("DB %s:", this.db.getListName()));
+
+		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
+			this.lastActionMessage = null;
+		}
+		if (this.lastActionMessage != null && this.lastActionMessage.length() > 0) {
+			w.drawString(0, l++, String.format(">> %s", this.lastActionMessage));
+		}
+		else {
+			l++;
+		}
 
 		this.pageSize = scr.getTerminalSize().getRows() - l;
 		final int selI = this.sources.indexOf(this.selectedItem);

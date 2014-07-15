@@ -119,7 +119,7 @@ public class DbFace extends DefaultFace {
 				menuMoveEnd(VDirection.DOWN);
 				return true;
 			case F6:
-				this.navigation.startFace(new DbPropertiesFace(this.navigation, this.db));
+				this.navigation.startFace(new DbPropertiesFace(this.navigation, this.mnContext, this.db));
 				return true;
 			case NormalKey:
 				switch (k.getCharacter()) {
