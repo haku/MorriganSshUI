@@ -17,6 +17,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.vaguehope.morrigan.sshui.Face.FaceNavigation;
+import com.vaguehope.morrigan.sshui.term.DarkTheme;
 import com.vaguehope.morrigan.sshui.term.SshScreen;
 import com.vaguehope.morrigan.util.ErrorHelper;
 
@@ -37,6 +38,7 @@ public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBack
 	protected void initScreen (final Screen scr) {
 		scr.setCursorPosition(null);
 		this.gui = new GUIScreen(scr);
+		this.gui.setTheme(DarkTheme.INSTANCE);
 		this.gui.setBackgroundRenderer(this);
 		startFace(new HomeFace(this, this.mnContext));
 	}
