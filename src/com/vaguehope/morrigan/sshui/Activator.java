@@ -2,6 +2,7 @@ package com.vaguehope.morrigan.sshui;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 import org.apache.sshd.SshServer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -13,7 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import com.vaguehope.morrigan.model.media.MediaFactoryTracker;
 import com.vaguehope.morrigan.player.PlayerReaderTracker;
-import com.vaguehope.morrigan.sshui.ssh.FakePasswordAuthenticator;
+import com.vaguehope.morrigan.sshui.ssh.MnPasswordAuthenticator;
+import com.vaguehope.morrigan.sshui.ssh.UserPublickeyAuthenticator;
 import com.vaguehope.morrigan.tasks.AsyncTasksRegisterTracker;
 
 public class Activator implements BundleActivator {
@@ -31,7 +33,7 @@ public class Activator implements BundleActivator {
 	private AsyncTasksRegisterTracker asyncTasksRegisterTracker;
 
 	@Override
-	public void start (final BundleContext context) throws IOException {
+	public void start (final BundleContext context) throws IOException, GeneralSecurityException {
 		if (this.sshd != null) throw new IllegalStateException("Already started.");
 
 		final File hostKey = new File(HOSTKEY_NAME).getAbsoluteFile();
@@ -47,7 +49,8 @@ public class Activator implements BundleActivator {
 		this.sshd.setPort(SSHD_PORT);
 		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.getAbsolutePath()));
 		this.sshd.setShellFactory(this.mnCommandFactory);
-		this.sshd.setPasswordAuthenticator(new FakePasswordAuthenticator());
+		this.sshd.setPasswordAuthenticator(new MnPasswordAuthenticator());
+		this.sshd.setPublickeyAuthenticator(new UserPublickeyAuthenticator());
 		this.sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, String.valueOf(IDLE_TIMEOUT));
 		this.sshd.start();
 
