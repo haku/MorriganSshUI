@@ -9,13 +9,20 @@ public final class Quietly {
 		throw new AssertionError();
 	}
 
-	public static boolean await (CountDownLatch latch, long timeout, TimeUnit unit) {
+	public static boolean await (final CountDownLatch latch, final long timeout, final TimeUnit unit) {
 		try {
 			return latch.await(timeout, unit);
 		}
 		catch (InterruptedException e) {
 			return false;
 		}
+	}
+
+	public static void sleep (final long millis) {
+		try {
+			Thread.sleep(millis);
+		}
+		catch (InterruptedException e) {}
 	}
 
 }

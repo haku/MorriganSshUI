@@ -1,8 +1,9 @@
 package com.vaguehope.morrigan.sshui;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.Factory;
@@ -12,25 +13,28 @@ import org.slf4j.LoggerFactory;
 
 public class MnCommandFactory implements Factory<Command> {
 
+	private static final int MAX_CLIENTS = 10;
 	private static final String THREAD_NAME_PREFIX = "ConsoleSch";
-	private static final int CLIENT_THREADS = 1;
 
 	private final MnContext mnContext;
-	private final ScheduledExecutorService schEx;
+	private final ThreadPoolExecutor es;
 
 	public MnCommandFactory (final MnContext mnContext) {
 		this.mnContext = mnContext;
-		this.schEx = Executors.newScheduledThreadPool(CLIENT_THREADS,
+		this.es = new ThreadPoolExecutor(0, MAX_CLIENTS,
+				1L, TimeUnit.MINUTES,
+				new SynchronousQueue<Runnable>(),
 				new NamedThreadFactory(new LoggingThreadGroup(Thread.currentThread().getThreadGroup(), THREAD_NAME_PREFIX), THREAD_NAME_PREFIX));
+		this.es.allowCoreThreadTimeOut(true);
 	}
 
 	public void shutdown () {
-		this.schEx.shutdownNow();
+		this.es.shutdownNow();
 	}
 
 	@Override
 	public Command create () {
-		return new MnCommand(this.mnContext, this.schEx);
+		return new MnCommand(this.mnContext, this.es);
 	}
 
 	private static class LoggingThreadGroup extends ThreadGroup {

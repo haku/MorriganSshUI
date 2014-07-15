@@ -1,10 +1,7 @@
 package com.vaguehope.morrigan.sshui.term;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -20,7 +17,6 @@ import com.vaguehope.morrigan.sshui.util.Quietly;
 
 public abstract class SshScreen implements Runnable {
 
-	private static final long POLL_CYCLE = 50L;
 	private static final long PRINT_CYCLE = 500L;
 	private static final long SHUTDOWN_TIMEOUT = 5000L;
 
@@ -34,9 +30,8 @@ public abstract class SshScreen implements Runnable {
 	private final Screen screen;
 	private final ScreenWriter screenWriter;
 
-	private final AtomicBoolean up = new AtomicBoolean(true);
+	private volatile boolean alive = true;
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
-	private ScheduledFuture<?> schFuture;
 	private boolean inited = false;
 	private long lastPrint = 0L;
 
@@ -49,20 +44,14 @@ public abstract class SshScreen implements Runnable {
 		this.screenWriter = new ScreenWriter(this.screen);
 	}
 
-	public void schedule (final ScheduledExecutorService schEx) {
-		if (this.schFuture != null) throw new IllegalStateException("Already scheduled: " + this.schFuture);
-		this.schFuture = schEx.scheduleWithFixedDelay(this, 0L, POLL_CYCLE, TimeUnit.MILLISECONDS);
-	}
-
 	public void stopAndJoin () {
-		if (this.up.compareAndSet(true, false)) {
-			LOG.info("Killing session {}...", this.name);
-			Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
-		}
+		scheduleQuit();
+		Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
 	protected void scheduleQuit () {
-		this.up.set(false);
+		if (this.alive) LOG.info("Killing session {}...", this.name);
+		this.alive = false;
 	}
 
 	protected Environment getEnv () {
@@ -81,30 +70,31 @@ public abstract class SshScreen implements Runnable {
 	@Override
 	public void run () {
 		try {
-			tick();
+			init();
+			while (this.alive) {
+				tick();
+				Quietly.sleep(10); // FIXME I wish terminal.readInput() used blocking-with-timeout IO.
+			}
 		}
 		catch (final Throwable t) {
 			LOG.error("Session error.", t);
-			scheduleQuit(); // Should all die on next tick.
+			scheduleQuit();
 		}
-	}
-
-	private void tick () {
-		init();
-		if (this.up.get()) {
-			if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
-				printScreen();
-				this.lastPrint = System.currentTimeMillis();
-			}
-		}
-		else {
-			this.schFuture.cancel(false);
+		finally {
 			this.screen.stopScreen();
 			this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
 			this.callback.onExit(0, "baibai!");
 			LOG.info("Session destroyed: {}", this.name);
 			this.shutdownLatch.countDown();
 		}
+	}
+
+	private void tick () {
+		if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
+			printScreen();
+			this.lastPrint = System.currentTimeMillis();
+		}
+
 	}
 
 	private boolean readInput () {
@@ -132,6 +122,7 @@ public abstract class SshScreen implements Runnable {
 	protected abstract boolean onInput (Key k);
 
 	protected abstract void initScreen (Screen scr);
+
 	protected abstract void writeScreen (Screen scr, ScreenWriter w);
 
 }

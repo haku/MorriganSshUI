@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.server.Command;
@@ -21,17 +21,17 @@ public class MnCommand implements Command, SessionAware {
 	private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
 	private final MnContext mnContext;
-	private final ScheduledExecutorService schEx;
+	private final ExecutorService es;
 
 	private InputStream in;
 	private OutputStream out;
 	private ExitCallback callback;
 
-	private volatile MnScreen term = null;
+	private volatile MnScreen screen = null;
 
-	public MnCommand (final MnContext mnContext, final ScheduledExecutorService schEx) {
+	public MnCommand (final MnContext mnContext, final ExecutorService es) {
 		this.mnContext = mnContext;
-		this.schEx = schEx;
+		this.es = es;
 	}
 
 	@Override
@@ -58,14 +58,14 @@ public class MnCommand implements Command, SessionAware {
 	@Override
 	public void start (final Environment env) throws IOException {
 		final Terminal terminal = new SshTerminal(this.in, this.out, Charset.forName("UTF8"), env);
-		this.term = new MnScreen("mnScreen" + COUNTER.getAndIncrement(), this.mnContext, env, terminal, this.callback);
-		this.term.schedule(this.schEx);
+		this.screen = new MnScreen("mnScreen" + COUNTER.getAndIncrement(), this.mnContext, env, terminal, this.callback);
+		this.es.submit(this.screen);
 	}
 
 	@Override
 	public void destroy () {
-		if (this.term == null) throw new IllegalStateException();
-		this.term.stopAndJoin();
+		if (this.screen == null) throw new IllegalStateException();
+		this.screen.stopAndJoin();
 	}
 
 }
