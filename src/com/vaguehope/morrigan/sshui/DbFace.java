@@ -241,7 +241,7 @@ public class DbFace extends DefaultFace {
 
 	private void askSearch (final GUIScreen gui) throws DbException {
 		final String term = TextInputDialog.showTextInputBox(gui, "Search", "",
-				this.searchTerm != null ? this.searchTerm : "");
+				this.searchTerm != null ? this.searchTerm : "", 50);
 		if (term != null) {
 			this.navigation.startFace(new DbFace(this.navigation, this.mnContext, this.db, this.defaultPlayer, term));
 		}

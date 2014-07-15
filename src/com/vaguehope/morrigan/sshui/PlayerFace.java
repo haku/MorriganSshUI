@@ -149,7 +149,7 @@ public class PlayerFace extends DefaultFace {
 		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
-				final String term = TextInputDialog.showTextInputBox(gui, "Search", "", "");
+				final String term = TextInputDialog.showTextInputBox(gui, "Search", "", "", 50);
 				if (term != null) {
 					this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (IMixedMediaDb) list, this.player, term));
 				}
