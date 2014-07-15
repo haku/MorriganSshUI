@@ -1,8 +1,10 @@
 package com.vaguehope.morrigan.sshui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
@@ -25,16 +27,35 @@ public class HomeFace extends DefaultFace {
 			"<space>\tplay / pause\n" +
 			"      h\tthis help text";
 
+	private static final long DATA_REFRESH_MILLIS = 500L;
+
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 
+	private long lastDataRefresh = 0;
 	private List<Player> players;
+	private List<String> tasks;
 	private List<MediaListReference> dbs;
 	private Object selectedItem;
+
 
 	public HomeFace (final FaceNavigation actions, final MnContext mnContext) {
 		this.navigation = actions;
 		this.mnContext = mnContext;
+	}
+
+	private void refreshData () {
+		this.players = asList(this.mnContext.getPlayerReader().getPlayers());
+		this.tasks = Arrays.asList(this.mnContext.getAsyncTasksRegister().reportIndiviually());
+		this.dbs = asList(this.mnContext.getMediaFactory().getAllLocalMixedMediaDbs());
+	}
+
+	private void refreshStateData() {
+		final long now = System.nanoTime();
+		if (now - this.lastDataRefresh > TimeUnit.MILLISECONDS.toNanos(DATA_REFRESH_MILLIS)) {
+			refreshData();
+			this.lastDataRefresh = now;
+		}
 	}
 
 	@Override
@@ -129,10 +150,19 @@ public class HomeFace extends DefaultFace {
 
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
+		refreshStateData();
+
 		int l = 0;
 		w.drawString(0, l++, "Players");
 		l = printPlayers(w, l);
 		l++;
+
+		if(MenuHelper.sizeOf(this.tasks) > 0) {
+			w.drawString(0, l++, "Background Tasks");
+			l = printTasks(w, l);
+			l++;
+		}
+
 		w.drawString(0, l++, "DBs");
 		l = printDbs(w, l);
 
@@ -141,7 +171,6 @@ public class HomeFace extends DefaultFace {
 
 	private int printPlayers (final ScreenWriter w, final int initialLine) {
 		int l = initialLine;
-		this.players = asList(this.mnContext.getPlayerReader().getPlayers());
 		if (this.players.size() > 0) {
 			for (final Player p : this.players) {
 				if (p.isDisposed()) continue;
@@ -161,9 +190,18 @@ public class HomeFace extends DefaultFace {
 		return l;
 	}
 
+	private int printTasks (final ScreenWriter w, final int initialLine) {
+		int l = initialLine;
+		for (final String task : this.tasks) {
+			for (final String line : task.split("\\r?\\n")) {
+				w.drawString(1, l++, line);
+			}
+		}
+		return l;
+	}
+
 	private int printDbs (final ScreenWriter w, final int initialLine) {
 		int l = initialLine;
-		this.dbs = asList(this.mnContext.getMediaFactory().getAllLocalMixedMediaDbs());
 		if (this.dbs.size() > 0) {
 			for (final MediaListReference db : this.dbs) {
 				if (db.equals(this.selectedItem)) {
