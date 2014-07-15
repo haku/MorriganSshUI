@@ -259,8 +259,15 @@ public class DbFace extends DefaultFace {
 
 	private void writeDbToScreen (final Screen scr, final ScreenWriter w) {
 		int l = 0;
-		w.drawString(0, l++, String.format("DB %s: %s   %s",
-				this.db.getListName(), PlayerHelper.dbSummary(this.db), PlayerHelper.sortSummary(this.db)));
+
+		if (this.searchTerm != null) {
+			w.drawString(0, l++, String.format("DB %s: search '%s'",
+					this.db.getListName(), this.searchTerm));
+		}
+		else {
+			w.drawString(0, l++, String.format("DB %s: %s   %s",
+					this.db.getListName(), PlayerHelper.dbSummary(this.db), PlayerHelper.sortSummary(this.db)));
+		}
 
 		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
 			this.lastActionMessage = null;
