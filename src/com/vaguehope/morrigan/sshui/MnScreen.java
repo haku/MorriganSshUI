@@ -8,8 +8,9 @@ import org.apache.sshd.server.ExitCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.googlecode.lanterna.gui.DefaultBackgroundRenderer;
 import com.googlecode.lanterna.gui.GUIScreen;
+import com.googlecode.lanterna.gui.GUIScreenBackgroundRenderer;
+import com.googlecode.lanterna.gui.TextGraphics;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.screen.Screen;
@@ -19,7 +20,7 @@ import com.vaguehope.morrigan.sshui.Face.FaceNavigation;
 import com.vaguehope.morrigan.sshui.term.SshScreen;
 import com.vaguehope.morrigan.util.ErrorHelper;
 
-public class MnScreen extends SshScreen implements FaceNavigation {
+public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBackgroundRenderer {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MnScreen.class);
 
@@ -36,7 +37,7 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 	protected void initScreen (final Screen scr) {
 		scr.setCursorPosition(null);
 		this.gui = new GUIScreen(scr);
-		this.gui.setBackgroundRenderer(new DefaultBackgroundRenderer("Morrigan desu~"));
+		this.gui.setBackgroundRenderer(this);
 		startFace(new HomeFace(this, this.mnContext));
 	}
 
@@ -88,6 +89,11 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 	@Override
 	protected void writeScreen (final Screen scr, final ScreenWriter w) {
 		activeFace().writeScreen(scr, w);
+	}
+
+	@Override
+	public void drawBackground (final TextGraphics tg) {
+		printScreen();
 	}
 
 }

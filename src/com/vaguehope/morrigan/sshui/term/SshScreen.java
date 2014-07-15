@@ -106,7 +106,7 @@ public abstract class SshScreen implements Runnable {
 		return changed;
 	}
 
-	private void printScreen () {
+	protected void printScreen () {
 		if (this.screen.resizePending()) {
 			this.screenWriter.fillScreen(' ');
 			this.screen.refresh();
