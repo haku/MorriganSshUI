@@ -5,7 +5,7 @@ import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenWriter;
 
-public class HelpFace implements Face {
+public class HelpFace extends DefaultFace {
 
 	private final FaceNavigation navigation;
 	private final String helpText;

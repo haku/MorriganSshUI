@@ -17,7 +17,7 @@ import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.sqlitewrapper.DbException;
 
-public class HomeFace implements Face {
+public class HomeFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
 			"      g\tgo to top of list\n" +
@@ -43,7 +43,6 @@ public class HomeFace implements Face {
 		// TODO
 		// - New DB.
 		// - Scrolling.
-		// - help screen.
 
 		switch (k.getKind()) {
 			case ArrowUp:

@@ -25,7 +25,7 @@ import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.sqlitewrapper.DbException;
 
-public class DbFace implements Face {
+public class DbFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
 			"      g\tgo to top of list\n" +
@@ -34,6 +34,7 @@ public class DbFace implements Face {
 			"      o\tsort order\n" +
 			"      e\tenqueue item\n" +
 			"      r\trefresh query\n" +
+			"     f6\tDB properties\n" +
 			"      h\tthis help text";
 
 	private static final int MAX_SEARCH_RESULTS = 200;
@@ -46,7 +47,7 @@ public class DbFace implements Face {
 	private final String searchTerm;
 
 	private List<IMixedMediaItem> mediaItems;
-	private int selectedItemIndex;
+	private int selectedItemIndex = -1;
 	private int queueScrollTop = 0;
 	private int pageSize = 1;
 	private String lastActionMessage = null;
@@ -100,8 +101,7 @@ public class DbFace implements Face {
 	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
 
 		// TODO
-		// - jump back all searches? (Q).
-		// - help screen.
+		// - jump back all searches? (Q) (go back to last player / non search Face?).
 
 		switch (k.getKind()) {
 			case ArrowUp:
@@ -117,6 +117,9 @@ public class DbFace implements Face {
 				return true;
 			case End:
 				menuMoveEnd(VDirection.DOWN);
+				return true;
+			case F6:
+				this.navigation.startFace(new DbPropertiesFace(this.navigation, this.db));
 				return true;
 			case NormalKey:
 				switch (k.getCharacter()) {

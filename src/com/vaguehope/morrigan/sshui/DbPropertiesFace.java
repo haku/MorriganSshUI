@@ -1,0 +1,190 @@
+package com.vaguehope.morrigan.sshui;
+
+import java.io.File;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.googlecode.lanterna.gui.GUIScreen;
+import com.googlecode.lanterna.gui.dialog.DialogButtons;
+import com.googlecode.lanterna.gui.dialog.DialogResult;
+import com.googlecode.lanterna.gui.dialog.MessageBox;
+import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.ScreenCharacterStyle;
+import com.googlecode.lanterna.screen.ScreenWriter;
+import com.vaguehope.morrigan.model.exceptions.MorriganException;
+import com.vaguehope.morrigan.model.media.IMixedMediaDb;
+import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.sqlitewrapper.DbException;
+
+public class DbPropertiesFace extends DefaultFace {
+
+	private static final String HELP_TEXT =
+			"       g\tgo to top of list\n" +
+			"       G\tgo to end of list\n" +
+			"       r\trefresh\n" +
+			"       n\tadd new source\n" +
+			"<delete>\tremove source\n" +
+			"       h\tthis help text";
+
+	private static final Logger LOG = LoggerFactory.getLogger(DbPropertiesFace.class);
+
+	private final FaceNavigation navigation;
+	private final IMixedMediaDb db;
+
+	private List<String> sources;
+	private Object selectedItem;
+	private int queueScrollTop = 0;
+	private int pageSize = 1;
+
+	public DbPropertiesFace (final FaceNavigation navigation, final IMixedMediaDb db) throws MorriganException {
+		this.navigation = navigation;
+		this.db = db;
+		refreshData();
+	}
+
+	private void refreshData () throws MorriganException {
+		this.sources = this.db.getSources();
+	}
+
+	@Override
+	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
+		switch (k.getKind()) {
+			case ArrowUp:
+			case ArrowDown:
+				menuMove(k, 1);
+				return true;
+			case PageUp:
+			case PageDown:
+				menuMove(k, this.pageSize - 1);
+				return true;
+			case Home:
+				menuMoveEnd(VDirection.UP);
+				return true;
+			case End:
+				menuMoveEnd(VDirection.DOWN);
+				return true;
+			case Delete:
+				removeSource(gui);
+				return true;
+			case NormalKey:
+				switch (k.getCharacter()) {
+					case 'q':
+						return this.navigation.backOneLevel();
+					case 'h':
+						this.navigation.startFace(new HelpFace(this.navigation, HELP_TEXT));
+						return true;
+					case 'g':
+						menuMoveEnd(VDirection.UP);
+						return true;
+					case 'G':
+						menuMoveEnd(VDirection.DOWN);
+						return true;
+					case 'r':
+						refreshData();
+						return true;
+					case 'n':
+						askAddSource();
+						return true;
+					default:
+				}
+			default:
+				return false;
+		}
+	}
+
+	private void menuMove (final Key k, final int distance) {
+		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
+				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+						? VDirection.UP
+						: VDirection.DOWN,
+				distance,
+				this.sources);
+	}
+
+	private void menuMoveEnd (final VDirection direction) {
+		if (this.sources == null || this.sources.size() < 1) return;
+		switch (direction) {
+			case UP:
+				this.selectedItem = this.sources.get(0);
+				break;
+			case DOWN:
+				this.selectedItem = this.sources.get(this.sources.size() - 1);
+				break;
+			default:
+		}
+	}
+
+	private void askAddSource () {
+		this.navigation.startFace(new DirChooserFace(this.navigation, new File(System.getProperty("user.home"))));
+	}
+
+	@Override
+	public void onFaceResult (final Object result) throws MorriganException {
+		if (result instanceof File) {
+			final File file = (File) result;
+			this.db.addSource(file.getAbsolutePath());
+			refreshData();
+		}
+		else {
+			LOG.error("Unexpected face result: {}", result);
+		}
+	}
+
+	private void removeSource (final GUIScreen gui) throws MorriganException {
+		if (this.selectedItem == null) return;
+		if (this.selectedItem instanceof String && this.sources != null) {
+			final int i = this.sources.indexOf(this.selectedItem);
+			final String source = (String) this.selectedItem;
+			if (MessageBox.showMessageBox(gui, "Remove Source", source, DialogButtons.YES_NO) != DialogResult.YES) return;
+			this.db.removeSource(source);
+			refreshData();
+			if (i >= this.sources.size()) { // Last item was deleted.
+				this.selectedItem = this.sources.get(this.sources.size() - 1);
+			}
+			else if (i >= 0) {
+				this.selectedItem = this.sources.get(i);
+			}
+		}
+	}
+
+	@Override
+	public void writeScreen (final Screen scr, final ScreenWriter w) {
+		if (this.db != null) {
+			writeDbPropsToScreen(scr, w);
+		}
+		else {
+			w.drawString(0, 0, "Unable to show " + this.db.getListName());
+		}
+	}
+
+	private void writeDbPropsToScreen (final Screen scr, final ScreenWriter w) {
+		int l = 0;
+		w.drawString(0, l++, String.format("DB %s:", this.db.getListName()));
+
+		this.pageSize = scr.getTerminalSize().getRows() - l;
+		final int selI = this.sources.indexOf(this.selectedItem);
+		if (selI >= 0) {
+			if (selI - this.queueScrollTop >= this.pageSize) {
+				this.queueScrollTop = selI - this.pageSize + 1;
+			}
+			else if (selI < this.queueScrollTop) {
+				this.queueScrollTop = selI;
+			}
+		}
+
+		for (int i = this.queueScrollTop; i < this.sources.size(); i++) {
+			if (i > this.queueScrollTop + this.pageSize) break;
+			final String item = this.sources.get(i);
+			if (item.equals(this.selectedItem)) {
+				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
+			}
+			else {
+				w.drawString(1, l++, String.valueOf(item));
+			}
+		}
+	}
+}

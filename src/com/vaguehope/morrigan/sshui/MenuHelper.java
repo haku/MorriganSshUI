@@ -9,8 +9,15 @@ public class MenuHelper {
 		UP, DOWN;
 	}
 
+	public static <T> int moveListSelectionIndex (final int selectedIndex, final VDirection direction, final int distance, final T[] list) {
+		return moveListSelectionIndex(selectedIndex, direction, distance, sizeOf(list));
+	}
+
 	public static int moveListSelectionIndex (final int selectedIndex, final VDirection direction, final int distance, final List<?> list) {
-		final int limit = sizeOf(list);
+		return moveListSelectionIndex(selectedIndex, direction, distance, sizeOf(list));
+	}
+
+	private static int moveListSelectionIndex (final int selectedIndex, final VDirection direction, final int distance, final int limit) {
 		int i = selectedIndex;
 		if (i < 0) {
 			i = limit > 0 ? 0 : -1;
@@ -73,6 +80,10 @@ public class MenuHelper {
 			x -= sizeOf(list);
 		}
 		return null;
+	}
+
+	public static <T> int sizeOf (final T[] c) {
+		return c != null ? c.length : 0;
 	}
 
 	public static int sizeOf (final Collection<?> c) {

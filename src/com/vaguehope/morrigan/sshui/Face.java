@@ -12,14 +12,25 @@ public interface Face {
 		void startFace (Face face);
 
 		/**
-		 * Returns true if a redraw is required.
+		 * Returns true if was not the last face.
+		 * If true is returned screen needs redrawing.
 		 */
 		boolean backOneLevel ();
+
+		/**
+		 * Returns same as backOneLevel().
+		 */
+		boolean backOneLevelWithResult (Object result);
 
 	}
 
 	boolean onInput (Key k, GUIScreen gui) throws Exception;
 
 	void writeScreen (Screen scr, ScreenWriter w);
+
+	/**
+	 * Called when face closed with backOneLevelWithResult();
+	 */
+	void onFaceResult (Object result) throws Exception;
 
 }

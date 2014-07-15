@@ -24,7 +24,7 @@ import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.sqlitewrapper.DbException;
 
-public class PlayerFace implements Face {
+public class PlayerFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
 			" <space>\tplay / pause\n" +
@@ -60,7 +60,6 @@ public class PlayerFace implements Face {
 
 		// TODO
 		// - add / remove tags.
-		// - help screen.
 
 		switch (k.getKind()) {
 			case ArrowUp:

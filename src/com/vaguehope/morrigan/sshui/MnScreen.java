@@ -60,6 +60,20 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 	}
 
 	@Override
+	public boolean backOneLevelWithResult (final Object result) {
+		final boolean ret = backOneLevel();
+		if (ret) {
+			try {
+				this.faces.getLast().onFaceResult(result);
+			}
+			catch (final Exception e) {
+				LOG.error("onFaceResult(" + result + ") failed.", e);
+			}
+		}
+		return ret;
+	}
+
+	@Override
 	protected boolean onInput (final Key k) {
 		try {
 			return activeFace().onInput(k, this.gui);
