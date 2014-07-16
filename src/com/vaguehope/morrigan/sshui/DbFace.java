@@ -38,6 +38,7 @@ public class DbFace extends DefaultFace {
 			"      /\tsearch DB\n" +
 			"      o\tsort order\n" +
 			"      e\tenqueue item\n" +
+			"      t\topen tag editor\n" +
 			"      r\trefresh query\n" +
 			"     f6\tDB properties\n" +
 			"      h\tthis help text";
@@ -152,6 +153,9 @@ public class DbFace extends DefaultFace {
 					case 'e':
 						enqueueItem(gui);
 						return true;
+					case 't':
+						showEditTagsForSelectedItem(gui);
+						return true;
 					case 'o':
 						askSortColumn(gui);
 						return true;
@@ -233,6 +237,12 @@ public class DbFace extends DefaultFace {
 			ActionListDialog.showActionListDialog(gui, "Enqueue", "Select player",
 					actions.toArray(new Action[actions.size()]));
 		}
+	}
+
+	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
+		final IMixedMediaItem item = getSelectedItem();
+		if (item == null) return;
+		TagEditor.show(gui, this.db, item);
 	}
 
 	protected void enqueueItem (final IMixedMediaItem item, final Player player) {

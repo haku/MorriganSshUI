@@ -21,5 +21,8 @@ public class DarkTheme extends Theme {
 
 		setDefinition(Category.BUTTON_INACTIVE, new Definition(Color.DEFAULT, Color.DEFAULT, false));
 		setDefinition(Category.BUTTON_LABEL_INACTIVE, new Definition(Color.DEFAULT, Color.DEFAULT, true));
+
+		setDefinition(Category.LIST_ITEM, new Definition(Color.DEFAULT, Color.DEFAULT, false));
+		setDefinition(Category.LIST_ITEM_SELECTED, new Definition(Color.WHITE, Color.BLUE, true));
 	}
 }

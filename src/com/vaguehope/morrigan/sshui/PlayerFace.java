@@ -38,6 +38,7 @@ public class PlayerFace extends DefaultFace {
 			"       o\tplayback order\n" +
 			"       /\tsearch DB\n" +
 			"       r\trefresh playing item's tags\n" +
+			"       T\topen tag editor for playing item\n" +
 			"       g\tgo to top of list\n" +
 			"       G\tgo to end of list\n" +
 			"<delete>\tremove from queue\n" +
@@ -45,6 +46,7 @@ public class PlayerFace extends DefaultFace {
 			"       k\tmove up in queue\n" +
 			"       j\tmove down in queue\n" +
 			"       J\tmove to bottom of queue\n" +
+			"       t\topen tag editor for queue item\n" +
 			"       h\tthis help text";
 
 	private static final long DATA_REFRESH_MILLIS = 500L;
@@ -160,6 +162,12 @@ public class PlayerFace extends DefaultFace {
 					case 'r':
 						invalidateData();
 						return true;
+					case 'T':
+						showEditTagsForPlayingItem(gui);
+						return true;
+					case 't':
+						showEditTagsForSelectedItem(gui);
+						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
 						return true;
@@ -221,6 +229,22 @@ public class PlayerFace extends DefaultFace {
 		else {
 			MessageBox.showMessageBox(gui, "Search", "No list selected.");
 		}
+	}
+
+	private void showEditTagsForPlayingItem (final GUIScreen gui) throws MorriganException {
+		showEditTagsForItem(gui, this.player.getCurrentItem());
+	}
+
+	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
+		if (this.selectedItem == null) return;
+		if (this.selectedItem instanceof PlayItem) {
+			showEditTagsForItem(gui, (PlayItem) this.selectedItem);
+		}
+	}
+
+	private static void showEditTagsForItem (final GUIScreen gui, final PlayItem item) throws MorriganException {
+		if (item == null || !item.isComplete()) return;
+		TagEditor.show(gui, item.getList(), item.getTrack());
 	}
 
 	private void menuMove (final Key k, final int distance) throws MorriganException {
