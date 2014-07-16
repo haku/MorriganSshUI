@@ -2,7 +2,6 @@ TODO
 ====
 
 - metadata display
-  - duration
   - last played
   - play counts
 - Multi select

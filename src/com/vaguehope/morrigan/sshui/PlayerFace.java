@@ -28,6 +28,7 @@ import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
+import com.vaguehope.morrigan.util.TimeHelper;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class PlayerFace extends DefaultFace {
@@ -305,6 +306,9 @@ public class PlayerFace extends DefaultFace {
 		}
 	}
 
+	private static final ScreenCharacterStyle[] UNSELECTED = new ScreenCharacterStyle[] {};
+	private static final ScreenCharacterStyle[] SELECTED = new ScreenCharacterStyle[] { ScreenCharacterStyle.Reverse };
+
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		refreshStaleData();
@@ -333,12 +337,13 @@ public class PlayerFace extends DefaultFace {
 		for (int i = this.queueScrollTop; i < this.queue.size(); i++) {
 			if (i >= this.queueScrollTop + this.pageSize) break;
 			final PlayItem item = this.queue.get(i);
-			if (item.equals(this.selectedItem)) {
-				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
+			final ScreenCharacterStyle[] style = item.equals(this.selectedItem) ? SELECTED : UNSELECTED;
+			w.drawString(1, l, String.valueOf(item), style);
+			if (item.hasTrack()) {
+				final String dur = TimeHelper.formatTimeSeconds(item.getTrack().getDuration());
+				w.drawString(terminalSize.getColumns() - dur.length(), l, dur, style);
 			}
-			else {
-				w.drawString(1, l++, String.valueOf(item));
-			}
+			l++;
 		}
 
 		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
