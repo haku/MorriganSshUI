@@ -1,6 +1,8 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -14,6 +16,8 @@ import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
+import com.googlecode.lanterna.terminal.Terminal.Color;
+import com.googlecode.lanterna.terminal.TerminalSize;
 import com.vaguehope.morrigan.model.db.IDbColumn;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaItemStorageLayer.SortDirection;
@@ -46,12 +50,16 @@ public class DbFace extends DefaultFace {
 	private final Player defaultPlayer;
 	private final String searchTerm;
 
+	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
 	private List<IMixedMediaItem> mediaItems;
 	private int selectedItemIndex = -1;
 	private int queueScrollTop = 0;
 	private int pageSize = 1;
 	private String lastActionMessage = null;
 	private long lastActionMessageTime = 0;
+	private String itemDetailsBar = "(details go here)";
+	private IMixedMediaItem itemDetailsBarItem;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
 		this(navigation, mnContext, listReference, null);
@@ -95,6 +103,14 @@ public class DbFace extends DefaultFace {
 	protected void setLastActionMessage (final String lastActionMessage) {
 		this.lastActionMessage = lastActionMessage;
 		this.lastActionMessageTime = System.currentTimeMillis();
+	}
+
+	private void updateItemDetailsBar (final IMixedMediaItem item) throws MorriganException {
+		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
+		this.itemDetailsBar = String.format("%s/%s %s %s",
+				item.getStartCount(), item.getEndCount(),
+				item.getDateLastPlayed() == null ? "" : this.dateFormat.format(item.getDateLastPlayed()),
+				PlayerHelper.join(this.db.getTags(item), ", "));
 	}
 
 	@Override
@@ -155,16 +171,17 @@ public class DbFace extends DefaultFace {
 		}
 	}
 
-	private void menuMove (final Key k, final int distance) {
+	private void menuMove (final Key k, final int distance) throws MorriganException {
 		this.selectedItemIndex = MenuHelper.moveListSelectionIndex(this.selectedItemIndex,
 				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
 						? VDirection.UP
 						: VDirection.DOWN,
 				distance,
 				this.mediaItems);
+		updateItemDetailsBar(getSelectedItem());
 	}
 
-	private void menuMoveEnd (final VDirection direction) {
+	private void menuMoveEnd (final VDirection direction) throws MorriganException {
 		if (this.mediaItems == null || this.mediaItems.size() < 1) return;
 		switch (direction) {
 			case UP:
@@ -175,6 +192,7 @@ public class DbFace extends DefaultFace {
 				break;
 			default:
 		}
+		updateItemDetailsBar(getSelectedItem());
 	}
 
 	private IMixedMediaItem getSelectedItem () {
@@ -222,6 +240,7 @@ public class DbFace extends DefaultFace {
 		player.getQueue().addToQueue(new PlayItem(this.db, item));
 		// TODO protect against long item names?
 		setLastActionMessage(String.format("Enqueued %s in %s.", item, player.getName()));
+		if (item.equals(getSelectedItem())) this.selectedItemIndex += 1;
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
@@ -258,6 +277,7 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void writeDbToScreen (final Screen scr, final ScreenWriter w) {
+		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
 
 		if (this.searchTerm != null) {
@@ -279,7 +299,7 @@ public class DbFace extends DefaultFace {
 			l++;
 		}
 
-		this.pageSize = scr.getTerminalSize().getRows() - l;
+		this.pageSize = terminalSize.getRows() - l - 1;
 		if (this.selectedItemIndex >= 0) {
 			if (this.selectedItemIndex - this.queueScrollTop >= this.pageSize) {
 				this.queueScrollTop = this.selectedItemIndex - this.pageSize + 1;
@@ -290,7 +310,7 @@ public class DbFace extends DefaultFace {
 		}
 
 		for (int i = this.queueScrollTop; i < this.mediaItems.size(); i++) {
-			if (i > this.queueScrollTop + this.pageSize) break;
+			if (i >= this.queueScrollTop + this.pageSize) break;
 			final IMixedMediaItem item = this.mediaItems.get(i);
 			if (i == this.selectedItemIndex) {
 				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
@@ -299,6 +319,24 @@ public class DbFace extends DefaultFace {
 				w.drawString(1, l++, String.valueOf(item));
 			}
 		}
+
+		fillRow(scr, terminalSize.getColumns(), terminalSize.getRows() - 1, Color.BLUE);
+		scr.putString(0, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+	}
+
+	private String cachedBlankRow = null;
+
+	private void fillRow (final Screen scr, final int width, final int top, final Color colour) {
+		if (this.cachedBlankRow == null || this.cachedBlankRow.length() < width) {
+			this.cachedBlankRow = fillString(' ', width);
+		}
+		scr.putString(0, top, this.cachedBlankRow, Color.DEFAULT, colour);
+	}
+
+	private static String fillString (final char c, final int n) {
+		final char[] chars = new char[n];
+		Arrays.fill(chars, c);
+		return new String(chars);
 	}
 
 	private static class SortColumnAction implements Action {

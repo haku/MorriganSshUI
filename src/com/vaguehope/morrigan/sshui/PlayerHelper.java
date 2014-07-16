@@ -111,7 +111,7 @@ public class PlayerHelper {
 				db.getSortDirection());
 	}
 
-	private static String join (final Collection<?> arr, final String sep) {
+	public static String join (final Collection<?> arr, final String sep) {
 		final StringBuilder s = new StringBuilder();
 		for (final Object obj : arr) {
 			if (s.length() > 0) s.append(sep);
