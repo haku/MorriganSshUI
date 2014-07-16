@@ -104,7 +104,7 @@ public class PlayerFace extends DefaultFace {
 			final PlayItem playItem = (PlayItem) this.selectedItem;
 			IMediaTrack item = playItem.getTrack();
 			if (item != null) {
-				this.itemDetailsBar = PlayerHelper.summariseItem(playItem.getList(), item, this.dateFormat);
+				this.itemDetailsBar = PlayerHelper.summariseItemWithPlayCounts(playItem.getList(), item, this.dateFormat);
 			}
 			else {
 				this.itemDetailsBar = "(no track selected)";

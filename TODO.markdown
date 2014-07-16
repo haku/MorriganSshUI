@@ -3,7 +3,6 @@ TODO
 
 - metadata display
   - last played
-  - play counts
 - Multi select
   - DB view
   - Queue view

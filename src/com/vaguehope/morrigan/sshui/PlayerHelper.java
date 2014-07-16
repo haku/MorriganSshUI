@@ -64,7 +64,7 @@ public class PlayerHelper {
 		return currentItem != null && currentItem.hasTrack() ? currentItem.getTrack().getTitle() : "";
 	}
 
-	public static String summariseItem (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
+	public static String summariseItemWithPlayCounts (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
 		if (item.getStartCount() > 0 || item.getEndCount() > 0) {
 			return String.format("%s/%s %s %s",
 					item.getStartCount(), item.getEndCount(),
@@ -72,6 +72,12 @@ public class PlayerHelper {
 					PlayerHelper.join(list.getTags(item), ", "));
 		}
 		return PlayerHelper.join(list.getTags(item), ", ");
+	}
+
+	public static String summariseItem (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
+		return String.format("%s %s",
+				item.getDateLastPlayed() == null ? "" : dateFormat.format(item.getDateLastPlayed()),
+				PlayerHelper.join(list.getTags(item), ", "));
 	}
 
 	public static String summariseTags (final Player player) {

@@ -327,6 +327,10 @@ public class DbFace extends DefaultFace {
 			final IMixedMediaItem item = this.mediaItems.get(i);
 			final ScreenCharacterStyle[] style = i == this.selectedItemIndex ? SELECTED : UNSELECTED;
 			w.drawString(1, l, String.valueOf(item), style);
+			if (item.getStartCount() > 0 || item.getEndCount() > 0) {
+				final String counts = String.format("%s/%s", item.getStartCount(), item.getEndCount());
+				w.drawString(terminalSize.getColumns() - 10 - counts.length(), l, counts, style);
+			}
 			final String dur = TimeHelper.formatTimeSeconds(item.getDuration());
 			w.drawString(terminalSize.getColumns() - dur.length(), l, dur, style);
 			l++;
