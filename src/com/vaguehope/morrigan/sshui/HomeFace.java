@@ -52,7 +52,7 @@ public class HomeFace extends DefaultFace {
 		this.dbs = asList(this.mnContext.getMediaFactory().getAllLocalMixedMediaDbs());
 	}
 
-	private void refreshStateData() {
+	private void refreshStaleData() {
 		final long now = System.nanoTime();
 		if (now - this.lastDataRefresh > TimeUnit.MILLISECONDS.toNanos(DATA_REFRESH_MILLIS)) {
 			refreshData();
@@ -163,7 +163,7 @@ public class HomeFace extends DefaultFace {
 
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
-		refreshStateData();
+		refreshStaleData();
 
 		int l = 0;
 		w.drawString(0, l++, "Players");
