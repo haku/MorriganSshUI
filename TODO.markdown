@@ -1,9 +1,6 @@
 TODO
 ====
 
-- tag showing
-  - DB view
-  - Queue view
 - metadata display
   - duration
   - last played

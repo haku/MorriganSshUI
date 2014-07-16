@@ -1,8 +1,8 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -27,6 +27,7 @@ import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class DbFace extends DefaultFace {
@@ -50,7 +51,8 @@ public class DbFace extends DefaultFace {
 	private final Player defaultPlayer;
 	private final String searchTerm;
 
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
+	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
 	private List<IMixedMediaItem> mediaItems;
 	private int selectedItemIndex = -1;
@@ -58,7 +60,7 @@ public class DbFace extends DefaultFace {
 	private int pageSize = 1;
 	private String lastActionMessage = null;
 	private long lastActionMessageTime = 0;
-	private String itemDetailsBar = "(details go here)";
+	private String itemDetailsBar = "";
 	private IMixedMediaItem itemDetailsBarItem;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
@@ -107,10 +109,7 @@ public class DbFace extends DefaultFace {
 
 	private void updateItemDetailsBar (final IMixedMediaItem item) throws MorriganException {
 		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
-		this.itemDetailsBar = String.format("%s/%s %s %s",
-				item.getStartCount(), item.getEndCount(),
-				item.getDateLastPlayed() == null ? "" : this.dateFormat.format(item.getDateLastPlayed()),
-				PlayerHelper.join(this.db.getTags(item), ", "));
+		this.itemDetailsBar = PlayerHelper.summariseItem(this.db, item, this.dateFormat);
 	}
 
 	@Override
@@ -320,23 +319,7 @@ public class DbFace extends DefaultFace {
 			}
 		}
 
-		fillRow(scr, terminalSize.getColumns(), terminalSize.getRows() - 1, Color.BLUE);
-		scr.putString(0, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
-	}
-
-	private String cachedBlankRow = null;
-
-	private void fillRow (final Screen scr, final int width, final int top, final Color colour) {
-		if (this.cachedBlankRow == null || this.cachedBlankRow.length() < width) {
-			this.cachedBlankRow = fillString(' ', width);
-		}
-		scr.putString(0, top, this.cachedBlankRow, Color.DEFAULT, colour);
-	}
-
-	private static String fillString (final char c, final int n) {
-		final char[] chars = new char[n];
-		Arrays.fill(chars, c);
-		return new String(chars);
+		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 
 	private static class SortColumnAction implements Action {

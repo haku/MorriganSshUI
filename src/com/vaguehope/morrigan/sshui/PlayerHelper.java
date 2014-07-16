@@ -1,5 +1,6 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.text.DateFormat;
 import java.util.Collection;
 import java.util.List;
 
@@ -61,6 +62,16 @@ public class PlayerHelper {
 	public static String playingItemTitle (final Player p) {
 		final PlayItem currentItem = p.getCurrentItem();
 		return currentItem != null && currentItem.hasTrack() ? currentItem.getTrack().getTitle() : "";
+	}
+
+	public static String summariseItem (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
+		if (item.getStartCount() > 0 || item.getEndCount() > 0) {
+			return String.format("%s/%s %s %s",
+					item.getStartCount(), item.getEndCount(),
+					item.getDateLastPlayed() == null ? "" : dateFormat.format(item.getDateLastPlayed()),
+					PlayerHelper.join(list.getTags(item), ", "));
+		}
+		return PlayerHelper.join(list.getTags(item), ", ");
 	}
 
 	public static String summariseTags (final Player player) {

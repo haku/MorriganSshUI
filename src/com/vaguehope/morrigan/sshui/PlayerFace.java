@@ -1,5 +1,7 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -14,6 +16,8 @@ import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
+import com.googlecode.lanterna.terminal.Terminal.Color;
+import com.googlecode.lanterna.terminal.TerminalSize;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
@@ -23,6 +27,7 @@ import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class PlayerFace extends DefaultFace {
@@ -48,6 +53,9 @@ public class PlayerFace extends DefaultFace {
 	private final MnContext mnContext;
 	private final Player player;
 
+	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
+	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
 	private long lastDataRefresh = 0;
 	private String tagSummary;
 	private PlayItem tagSummaryItem;
@@ -55,6 +63,8 @@ public class PlayerFace extends DefaultFace {
 	private Object selectedItem;
 	private int queueScrollTop = 0;
 	private int pageSize = 1;
+	private String itemDetailsBar = "";
+	private Object itemDetailsBarItem;
 
 	public PlayerFace (final FaceNavigation navigation, final MnContext mnContext, final Player player) {
 		this.navigation = navigation;
@@ -82,6 +92,23 @@ public class PlayerFace extends DefaultFace {
 		if (now - this.lastDataRefresh > TimeUnit.MILLISECONDS.toNanos(DATA_REFRESH_MILLIS)) {
 			refreshData();
 			this.lastDataRefresh = now;
+		}
+	}
+
+	private void updateSelectedItemDetailsBar () throws MorriganException {
+		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(this.selectedItem)) return;
+		if (this.selectedItem instanceof PlayItem) {
+			final PlayItem playItem = (PlayItem) this.selectedItem;
+			IMediaTrack item = playItem.getTrack();
+			if (item != null) {
+				this.itemDetailsBar = PlayerHelper.summariseItem(playItem.getList(), item, this.dateFormat);
+			}
+			else {
+				this.itemDetailsBar = "(no track selected)";
+			}
+		}
+		else {
+			this.itemDetailsBar = "(unknown item type)";
 		}
 	}
 
@@ -196,16 +223,17 @@ public class PlayerFace extends DefaultFace {
 		}
 	}
 
-	private void menuMove (final Key k, final int distance) {
+	private void menuMove (final Key k, final int distance) throws MorriganException {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
 				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
 						? VDirection.UP
 						: VDirection.DOWN,
 				distance,
 				this.queue);
+		updateSelectedItemDetailsBar();
 	}
 
-	private void menuMoveEnd (final VDirection direction) {
+	private void menuMoveEnd (final VDirection direction) throws MorriganException {
 		if (this.queue == null || this.queue.size() < 1) return;
 		switch (direction) {
 			case UP:
@@ -216,6 +244,7 @@ public class PlayerFace extends DefaultFace {
 				break;
 			default:
 		}
+		updateSelectedItemDetailsBar();
 	}
 
 	private void moveQueueItem (final VDirection direction) {
@@ -256,7 +285,9 @@ public class PlayerFace extends DefaultFace {
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		refreshStaleData();
 
+		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
+
 		w.drawString(0, l++, String.format("Player %s: %s   %s   %s.",
 				this.player.getId(), this.player.getName(), PlayerHelper.playerStateMsg(this.player), this.player.getPlaybackOrder()));
 		w.drawString(1, l++, PlayerHelper.playingItemTitle(this.player));
@@ -264,7 +295,7 @@ public class PlayerFace extends DefaultFace {
 		final PlayerQueue pq = this.player.getQueue();
 		w.drawString(0, l++, PlayerHelper.queueSummary(pq));
 
-		this.pageSize = scr.getTerminalSize().getRows() - l;
+		this.pageSize = terminalSize.getRows() - l;
 		final int selI = this.queue.indexOf(this.selectedItem);
 		if (selI >= 0) {
 			if (selI - this.queueScrollTop >= this.pageSize) {
@@ -276,7 +307,7 @@ public class PlayerFace extends DefaultFace {
 		}
 
 		for (int i = this.queueScrollTop; i < this.queue.size(); i++) {
-			if (i > this.queueScrollTop + this.pageSize) break;
+			if (i >= this.queueScrollTop + this.pageSize) break;
 			final PlayItem item = this.queue.get(i);
 			if (item.equals(this.selectedItem)) {
 				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
@@ -285,6 +316,8 @@ public class PlayerFace extends DefaultFace {
 				w.drawString(1, l++, String.valueOf(item));
 			}
 		}
+
+		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 
 }
