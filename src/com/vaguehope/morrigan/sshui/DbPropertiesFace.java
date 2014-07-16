@@ -26,12 +26,14 @@ public class DbPropertiesFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
 			"       g\tgo to top of list\n" +
-					"       G\tgo to end of list\n" +
-					"       r\trefresh\n" +
-					"       n\tadd new source\n" +
-					"<delete>\tremove source\n" +
-					"       u\trescan sources\n" +
-					"       h\tthis help text";
+			"       G\tgo to end of list\n" +
+			"       r\trefresh\n" +
+			"       n\tadd new source\n" +
+			"<delete>\tremove source\n" +
+			"       u\trescan sources\n" +
+			"       q\tback a page\n" +
+			"       h\tthis help text";
+
 	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
 	private static final Logger LOG = LoggerFactory.getLogger(DbPropertiesFace.class);
 

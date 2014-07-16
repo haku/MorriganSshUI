@@ -27,6 +27,7 @@ public class HomeFace extends DefaultFace {
 			"      G\tgo to end of list\n" +
 			"<space>\tplay / pause selected player\n" +
 			"      n\tcreate new DB\n" +
+			"      q\tback a page\n" +
 			"      h\tthis help text";
 
 	private static final long DATA_REFRESH_MILLIS = 500L;

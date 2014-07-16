@@ -23,6 +23,7 @@ public class DirChooserFace extends DefaultFace {
 			"    <enter>\tgo into directory\n" +
 			"<backspace>\tback up one level\n" +
 			"    <space>\tselect item and return to previous screen\n" +
+			"          q\tback a page\n" +
 			"          h\tthis help text";
 
 	private final FaceNavigation navigation;

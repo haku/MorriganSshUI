@@ -48,6 +48,7 @@ public class PlayerFace extends DefaultFace {
 			"       j\tmove down in queue\n" +
 			"       J\tmove to bottom of queue\n" +
 			"       t\topen tag editor for queue item\n" +
+			"       q\tback a page\n" +
 			"       h\tthis help text";
 
 	private static final long DATA_REFRESH_MILLIS = 500L;

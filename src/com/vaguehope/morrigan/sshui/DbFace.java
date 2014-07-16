@@ -42,6 +42,7 @@ public class DbFace extends DefaultFace {
 			"      t\topen tag editor\n" +
 			"      r\trefresh query\n" +
 			"     f6\tDB properties\n" +
+			"      q\tback a page\n" +
 			"      h\tthis help text";
 
 	private static final int MAX_SEARCH_RESULTS = 200;
