@@ -14,10 +14,10 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<tycho-version>0.19.0</tycho-version>
-    <lanterna.version>2.1.8</lanterna.version>
-    <sshd.version>0.11.0</sshd.version>
-    <logback.version>1.1.2</logback.version>
-    <slf4j.version>1.7.7</slf4j.version>
+		<lanterna.version>2.1.8</lanterna.version>
+		<sshd.version>0.11.0</sshd.version>
+		<logback.version>1.1.2</logback.version>
+		<slf4j.version>1.7.7</slf4j.version>
 	</properties>
 
 	<repositories>
@@ -103,43 +103,43 @@
 							<artifactItems>
 
 								<artifactItem>
-                  <groupId>com.googlecode.lanterna</groupId>
-                  <artifactId>lanterna</artifactId>
-                  <version>${lanterna.version}</version>
+									<groupId>com.googlecode.lanterna</groupId>
+									<artifactId>lanterna</artifactId>
+									<version>${lanterna.version}</version>
 									<type>jar</type>
 									<overWrite>false</overWrite>
 								</artifactItem>
 
 								<artifactItem>
-                  <groupId>org.apache.sshd</groupId>
-                  <artifactId>sshd-core</artifactId>
-                  <version>${sshd.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                </artifactItem>
+									<groupId>org.apache.sshd</groupId>
+									<artifactId>sshd-core</artifactId>
+									<version>${sshd.version}</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+								</artifactItem>
 
-                <artifactItem>
-                  <groupId>ch.qos.logback</groupId>
-                  <artifactId>logback-classic</artifactId>
-                  <version>${logback.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                </artifactItem>
+								<artifactItem>
+									<groupId>ch.qos.logback</groupId>
+									<artifactId>logback-classic</artifactId>
+									<version>${logback.version}</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+								</artifactItem>
 
-                <artifactItem>
-                  <groupId>ch.qos.logback</groupId>
-                  <artifactId>logback-core</artifactId>
-                  <version>${logback.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                </artifactItem>
+								<artifactItem>
+									<groupId>ch.qos.logback</groupId>
+									<artifactId>logback-core</artifactId>
+									<version>${logback.version}</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+								</artifactItem>
 
-                <artifactItem>
-                  <groupId>org.slf4j</groupId>
-                  <artifactId>slf4j-api</artifactId>
-                  <version>${slf4j.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
+								<artifactItem>
+									<groupId>org.slf4j</groupId>
+									<artifactId>slf4j-api</artifactId>
+									<version>${slf4j.version}</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
 								</artifactItem>
 
 							</artifactItems>
