@@ -2,6 +2,7 @@ package com.vaguehope.morrigan.sshui;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
@@ -31,6 +32,7 @@ public class PlayerFace extends DefaultFace {
 			"       n\tnext track\n" +
 			"       o\tplayback order\n" +
 			"       /\tsearch DB\n" +
+			"       r\trefresh playing item's tags\n" +
 			"       g\tgo to top of list\n" +
 			"       G\tgo to end of list\n" +
 			"<delete>\tremove from queue\n" +
@@ -40,10 +42,15 @@ public class PlayerFace extends DefaultFace {
 			"       J\tmove to bottom of queue\n" +
 			"       h\tthis help text";
 
+	private static final long DATA_REFRESH_MILLIS = 500L;
+
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final Player player;
 
+	private long lastDataRefresh = 0;
+	private String tagSummary;
+	private PlayItem tagSummaryItem;
 	private List<PlayItem> queue;
 	private Object selectedItem;
 	private int queueScrollTop = 0;
@@ -53,6 +60,29 @@ public class PlayerFace extends DefaultFace {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.player = player;
+	}
+
+	private void invalidateData () {
+		this.tagSummaryItem = null;
+		refreshData();
+	}
+
+	private void refreshData () {
+		final PlayItem currentItem = this.player.getCurrentItem();
+		if (this.tagSummaryItem == null || !this.tagSummaryItem.equals(currentItem)) {
+			this.tagSummary = PlayerHelper.summariseTags(this.player);
+			this.tagSummaryItem = currentItem;
+		}
+
+		this.queue = this.player.getQueue().getQueueList();
+	}
+
+	private void refreshStaleData () {
+		final long now = System.nanoTime();
+		if (now - this.lastDataRefresh > TimeUnit.MILLISECONDS.toNanos(DATA_REFRESH_MILLIS)) {
+			refreshData();
+			this.lastDataRefresh = now;
+		}
 	}
 
 	@Override
@@ -99,6 +129,9 @@ public class PlayerFace extends DefaultFace {
 					case 's':
 					case 'f':
 						askSearch(gui);
+						return true;
+					case 'r':
+						invalidateData();
 						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
@@ -221,15 +254,15 @@ public class PlayerFace extends DefaultFace {
 
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
+		refreshStaleData();
+
 		int l = 0;
 		w.drawString(0, l++, String.format("Player %s: %s   %s   %s.",
 				this.player.getId(), this.player.getName(), PlayerHelper.playerStateMsg(this.player), this.player.getPlaybackOrder()));
 		w.drawString(1, l++, PlayerHelper.playingItemTitle(this.player));
-		w.drawString(1, l++, PlayerHelper.summariseTags(this.player));
+		w.drawString(1, l++, this.tagSummary);
 		final PlayerQueue pq = this.player.getQueue();
 		w.drawString(0, l++, PlayerHelper.queueSummary(pq));
-
-		this.queue = pq.getQueueList();
 
 		this.pageSize = scr.getTerminalSize().getRows() - l;
 		final int selI = this.queue.indexOf(this.selectedItem);

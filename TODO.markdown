@@ -2,7 +2,6 @@ TODO
 ====
 
 - tag showing
-  - Now playing (cacheing)
   - DB view
   - Queue view
 - metadata display
