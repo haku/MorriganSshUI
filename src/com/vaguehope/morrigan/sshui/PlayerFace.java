@@ -4,6 +4,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import com.googlecode.lanterna.gui.Action;
@@ -49,6 +51,7 @@ public class PlayerFace extends DefaultFace {
 			"       j\tmove down in queue\n" +
 			"       J\tmove to bottom of queue\n" +
 			"       t\topen tag editor for queue item\n" +
+			"       f\tfull screen\n" +
 			"       q\tback a page\n" +
 			"       h\tthis help text";
 
@@ -104,7 +107,7 @@ public class PlayerFace extends DefaultFace {
 		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(this.selectedItem)) return;
 		if (this.selectedItem instanceof PlayItem) {
 			final PlayItem playItem = (PlayItem) this.selectedItem;
-			IMediaTrack item = playItem.getTrack();
+			final IMediaTrack item = playItem.getTrack();
 			if (item != null) {
 				this.itemDetailsBar = PlayerHelper.summariseItemWithPlayCounts(playItem.getList(), item, this.dateFormat);
 			}
@@ -161,8 +164,6 @@ public class PlayerFace extends DefaultFace {
 						askPlaybackOrder(gui);
 						return true;
 					case '/':
-					case 's':
-					case 'f':
 						askSearch(gui);
 						return true;
 					case 'r':
@@ -173,6 +174,9 @@ public class PlayerFace extends DefaultFace {
 						return true;
 					case 't':
 						showEditTagsForSelectedItem(gui);
+						return true;
+					case 'f':
+						askFullScreen(gui);
 						return true;
 					case 'g':
 						menuMoveEnd(VDirection.UP);
@@ -251,6 +255,27 @@ public class PlayerFace extends DefaultFace {
 	private static void showEditTagsForItem (final GUIScreen gui, final PlayItem item) throws MorriganException {
 		if (item == null || !item.isComplete()) return;
 		TagEditor.show(gui, item.getList(), item.getTrack());
+	}
+
+	private void askFullScreen (final GUIScreen gui) {
+		final Map<Integer, String> monitors = this.player.getMonitors();
+		final Action[] actions = new Action[monitors.size()];
+		int i = 0;
+		for (final Entry<Integer, String> monitor : monitors.entrySet()) {
+			actions[i] = new Action() {
+				@Override
+				public String toString () {
+					return String.format("%s. %s", monitor.getKey(), monitor.getValue());
+				}
+
+				@Override
+				public void doAction () {
+					PlayerFace.this.player.goFullscreen(monitor.getKey());
+				}
+			};
+			i++;
+		}
+		ActionListDialog.showActionListDialog(gui, "Full Screen", null, actions);
 	}
 
 	private void menuMove (final Key k, final int distance) throws MorriganException {

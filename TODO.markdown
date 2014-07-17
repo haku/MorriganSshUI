@@ -7,4 +7,3 @@ TODO
   - DB view
   - Queue view
 - search as typing
-- full-screen btns
