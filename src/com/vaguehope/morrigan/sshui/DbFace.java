@@ -295,8 +295,8 @@ public class DbFace extends DefaultFace {
 		int l = 0;
 
 		if (this.searchTerm != null) {
-			w.drawString(0, l++, String.format("DB %s: search '%s'",
-					this.db.getListName(), this.searchTerm));
+			w.drawString(0, l++, String.format("DB %s: %s results for '%s'",
+					this.db.getListName(), this.mediaItems.size(), this.searchTerm));
 		}
 		else {
 			w.drawString(0, l++, String.format("DB %s: %s   %s",
