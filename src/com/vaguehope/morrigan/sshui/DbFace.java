@@ -338,6 +338,9 @@ public class DbFace extends DefaultFace {
 		}
 
 		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
+				PlayerHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.queueScrollTop),
+				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 
 	private static class SortColumnAction implements Action {

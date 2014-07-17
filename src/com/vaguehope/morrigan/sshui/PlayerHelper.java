@@ -128,6 +128,15 @@ public class PlayerHelper {
 				db.getSortDirection());
 	}
 
+	public static String scrollSummary (final int count, final int pageSize, final int scrollTop) {
+		if (scrollTop == 0) {
+			if (count < pageSize) return "All";
+			return "Top";
+		}
+		if (scrollTop >= count - pageSize) return "Bot";
+		return String.format("%1$2s%%", (int) (((scrollTop + (pageSize / 2)) / (double) count) * 100));
+	}
+
 	public static String join (final Collection<?> arr, final String sep) {
 		final StringBuilder s = new StringBuilder();
 		for (final Object obj : arr) {

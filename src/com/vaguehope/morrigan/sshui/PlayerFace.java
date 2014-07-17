@@ -324,7 +324,7 @@ public class PlayerFace extends DefaultFace {
 		final PlayerQueue pq = this.player.getQueue();
 		w.drawString(0, l++, PlayerHelper.queueSummary(pq));
 
-		this.pageSize = terminalSize.getRows() - l;
+		this.pageSize = terminalSize.getRows() - l - 1;
 		final int selI = this.queue.indexOf(this.selectedItem);
 		if (selI >= 0) {
 			if (selI - this.queueScrollTop >= this.pageSize) {
@@ -348,6 +348,9 @@ public class PlayerFace extends DefaultFace {
 		}
 
 		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
+				PlayerHelper.scrollSummary(this.queue.size(), this.pageSize, this.queueScrollTop),
+				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 
 }
