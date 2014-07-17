@@ -53,7 +53,7 @@ public class MenuHelper {
 		return listOfListsGet(i, lists);
 	}
 
-	private static int sumSizes (final List<?>... lists) {
+	public static int sumSizes (final List<?>... lists) {
 		int count = 0;
 		for (final List<?> list : lists) {
 			count += sizeOf(list);
@@ -72,7 +72,7 @@ public class MenuHelper {
 		return -1;
 	}
 
-	private static Object listOfListsGet (final int i, final List<?>... lists) {
+	public static Object listOfListsGet (final int i, final List<?>... lists) {
 		if (i < 0) return null;
 		int x = i;
 		for (final List<?> list : lists) {

@@ -41,7 +41,6 @@ public class HomeFace extends DefaultFace {
 	private List<MediaListReference> dbs;
 	private Object selectedItem;
 
-
 	public HomeFace (final FaceNavigation actions, final MnContext mnContext) {
 		this.navigation = actions;
 		this.mnContext = mnContext;
@@ -53,7 +52,7 @@ public class HomeFace extends DefaultFace {
 		this.dbs = asList(this.mnContext.getMediaFactory().getAllLocalMixedMediaDbs());
 	}
 
-	private void refreshStaleData() {
+	private void refreshStaleData () {
 		final long now = System.nanoTime();
 		if (now - this.lastDataRefresh > TimeUnit.MILLISECONDS.toNanos(DATA_REFRESH_MILLIS)) {
 			refreshData();
@@ -119,10 +118,10 @@ public class HomeFace extends DefaultFace {
 	private void menuMoveEnd (final VDirection direction) {
 		switch (direction) {
 			case UP:
-				this.selectedItem = MenuHelper.listGet(this.players, 0);
+				this.selectedItem = MenuHelper.listOfListsGet(0, this.players, this.dbs);
 				break;
 			case DOWN:
-				this.selectedItem = MenuHelper.listGet(this.dbs, MenuHelper.sizeOf(this.dbs) - 1);
+				this.selectedItem = MenuHelper.listOfListsGet(MenuHelper.sumSizes(this.players, this.dbs) - 1, this.players, this.dbs);
 				break;
 			default:
 		}
@@ -171,7 +170,7 @@ public class HomeFace extends DefaultFace {
 		l = printPlayers(w, l);
 		l++;
 
-		if(MenuHelper.sizeOf(this.tasks) > 0) {
+		if (MenuHelper.sizeOf(this.tasks) > 0) {
 			w.drawString(0, l++, "Background Tasks");
 			l = printTasks(w, l);
 			l++;
