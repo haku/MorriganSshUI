@@ -37,10 +37,27 @@ public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBack
 	@Override
 	protected void initScreen (final Screen scr) {
 		scr.setCursorPosition(null);
-		this.gui = new GUIScreen(scr);
+		this.gui = new MnGUIScreen(scr, this);
 		this.gui.setTheme(DarkTheme.INSTANCE);
 		this.gui.setBackgroundRenderer(this);
 		startFace(new HomeFace(this, this.mnContext));
+	}
+
+	private static class MnGUIScreen extends GUIScreen {
+
+		private final MnScreen mnScreen;
+
+		public MnGUIScreen (final Screen scr, final MnScreen mnScreen) {
+			super(scr);
+			this.mnScreen = mnScreen;
+		}
+
+		@Override
+		protected boolean update () {
+			if (this.mnScreen.checkAndMarkRedrawRequired()) invalidate();
+			return super.update();
+		}
+
 	}
 
 	private Face activeFace () {

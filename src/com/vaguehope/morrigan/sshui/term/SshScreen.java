@@ -95,9 +95,20 @@ public abstract class SshScreen implements Runnable {
 		}
 	}
 
+	public boolean checkAndMarkRedrawRequired () {
+		final long now = System.nanoTime();
+		final boolean required = redrawRequired(now);
+		if (required) this.lastPrint = now;
+		return required;
+	}
+
+	private boolean redrawRequired (final long now) {
+		return now - this.lastPrint > PRINT_CYCLE_NANOS;
+	}
+
 	private void tick () {
 		final long now = System.nanoTime();
-		if (readInput() || now - this.lastPrint > PRINT_CYCLE_NANOS) {
+		if (readInput() || redrawRequired(now)) {
 
 			// FIXME this is a hack for unicode characters not clearing.
 			boolean completeRefresh = false;
