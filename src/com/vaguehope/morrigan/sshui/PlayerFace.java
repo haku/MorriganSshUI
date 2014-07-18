@@ -12,7 +12,6 @@ import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.ActionListDialog;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.gui.dialog.TextInputDialog;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
@@ -223,13 +222,13 @@ public class PlayerFace extends DefaultFace {
 		ActionListDialog.showActionListDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
 	}
 
-	private void askSearch (final GUIScreen gui) throws DbException {
+	private void askSearch (final GUIScreen gui) {
 		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
-				final String term = TextInputDialog.showTextInputBox(gui, "Search", "", "", 50);
-				if (term != null) {
-					this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (IMixedMediaDb) list, this.player, term));
+				final IMediaTrack track = JumpToDialog.show(gui, (IMixedMediaDb) list);
+				if (track != null) {
+					this.player.getQueue().addToQueue(new PlayItem(list, track));
 				}
 			}
 			else {
