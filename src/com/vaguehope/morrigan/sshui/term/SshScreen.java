@@ -141,8 +141,12 @@ public abstract class SshScreen implements Runnable {
 		}
 
 		this.screen.clear();
-		writeScreen(this.screen, this.screenWriter);
+		writeScreen();
 		this.screen.refresh();
+	}
+
+	protected void writeScreen () {
+		writeScreen(this.screen, this.screenWriter);
 	}
 
 	/**

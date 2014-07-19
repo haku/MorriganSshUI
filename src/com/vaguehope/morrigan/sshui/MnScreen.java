@@ -16,6 +16,7 @@ import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.googlecode.lanterna.terminal.Terminal;
+import com.googlecode.lanterna.terminal.TerminalPosition;
 import com.vaguehope.morrigan.sshui.Face.FaceNavigation;
 import com.vaguehope.morrigan.sshui.term.DarkTheme;
 import com.vaguehope.morrigan.sshui.term.SshScreen;
@@ -23,6 +24,7 @@ import com.vaguehope.morrigan.util.ErrorHelper;
 
 public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBackgroundRenderer {
 
+	private static final TerminalPosition POSITION_TOP_LEFT = new TerminalPosition(0, 0);
 	private static final Logger LOG = LoggerFactory.getLogger(MnScreen.class);
 
 	private final Deque<Face> faces = new LinkedList<Face>();
@@ -112,7 +114,9 @@ public class MnScreen extends SshScreen implements FaceNavigation, GUIScreenBack
 
 	@Override
 	public void drawBackground (final TextGraphics tg) {
-		printScreen(false);
+		// Bypass SshScreen clearing stuff as it will have already been done.
+		tg.fillRectangle(' ', POSITION_TOP_LEFT, tg.getSize());
+		writeScreen();
 	}
 
 }
