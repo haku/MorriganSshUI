@@ -15,6 +15,7 @@ import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.Window;
 import com.googlecode.lanterna.gui.component.AbstractListBox;
 import com.googlecode.lanterna.gui.component.Button;
+import com.googlecode.lanterna.gui.component.EmptySpace;
 import com.googlecode.lanterna.gui.component.Label;
 import com.googlecode.lanterna.gui.component.Panel;
 import com.googlecode.lanterna.gui.component.TextBox;
@@ -27,6 +28,8 @@ import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.model.media.MediaTagType;
+import com.vaguehope.morrigan.player.Player;
+import com.vaguehope.morrigan.sshui.Face.FaceNavigation;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class JumpToDialog extends Window {
@@ -46,7 +49,7 @@ public class JumpToDialog extends Window {
 	private volatile boolean alive = true;
 	private IMediaTrack result;
 
-	public JumpToDialog (final IMixedMediaDb db) {
+	public JumpToDialog (final IMixedMediaDb db, final FaceNavigation navigation, final MnContext mnContext, final Player player) {
 		super(db.getListName());
 		this.db = db;
 
@@ -63,8 +66,19 @@ public class JumpToDialog extends Window {
 		addComponent(this.lblTags);
 
 		final Panel cancelPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		cancelPanel.addComponent(new Label("                "));
-		// TODO add open in DB view button.
+		cancelPanel.addComponent(new EmptySpace(WIDTH - 20, 1)); // FIXME magic numbers.
+		cancelPanel.addComponent(new Button("Open", new Action() {
+			@Override
+			public void doAction () {
+				try {
+					navigation.startFace(new DbFace(navigation, mnContext, db, player, JumpToDialog.this.txtSearch.getText()));
+					close();
+				}
+				catch (DbException e) {
+					MessageBox.showMessageBox(getOwner(), "Error opening DB page.", e.toString());
+				}
+			}
+		}));
 		cancelPanel.addComponent(new Button("Close", new Action() {
 			@Override
 			public void doAction () {
@@ -131,6 +145,7 @@ public class JumpToDialog extends Window {
 		}
 
 		public void requestTags (final IMediaTrack item) {
+			if (item == null) return;
 			this.queue.offer(item);
 		}
 
@@ -340,8 +355,8 @@ public class JumpToDialog extends Window {
 
 	}
 
-	public static IMediaTrack show (final GUIScreen owner, final IMixedMediaDb db) {
-		final JumpToDialog dialog = new JumpToDialog(db);
+	public static IMediaTrack show (final GUIScreen owner, final FaceNavigation navigation, final MnContext mnContext, final Player player, final IMixedMediaDb db) {
+		final JumpToDialog dialog = new JumpToDialog(db, navigation, mnContext, player);
 		owner.showWindow(dialog, GUIScreen.Position.CENTER);
 		return dialog.getResult();
 	}

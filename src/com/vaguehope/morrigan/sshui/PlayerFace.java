@@ -226,7 +226,7 @@ public class PlayerFace extends DefaultFace {
 		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
-				final IMediaTrack track = JumpToDialog.show(gui, (IMixedMediaDb) list);
+				final IMediaTrack track = JumpToDialog.show(gui, this.navigation, this.mnContext, this.player, (IMixedMediaDb) list);
 				if (track != null) {
 					this.player.getQueue().addToQueue(new PlayItem(list, track));
 				}
