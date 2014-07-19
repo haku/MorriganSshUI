@@ -6,4 +6,3 @@ TODO
 - Multi select
   - DB view
   - Queue view
-- search as typing

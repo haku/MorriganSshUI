@@ -227,9 +227,7 @@ public class PlayerFace extends DefaultFace {
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
 				final IMediaTrack track = JumpToDialog.show(gui, this.navigation, this.mnContext, this.player, (IMixedMediaDb) list);
-				if (track != null) {
-					this.player.getQueue().addToQueue(new PlayItem(list, track));
-				}
+				if (track != null) this.player.getQueue().addToQueue(new PlayItem(list, track));
 			}
 			else {
 				MessageBox.showMessageBox(gui, "TODO", "Search: " + list);

@@ -10,7 +10,6 @@ import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.ActionListDialog;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.gui.dialog.TextInputDialog;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
@@ -21,6 +20,7 @@ import com.googlecode.lanterna.terminal.TerminalSize;
 import com.vaguehope.morrigan.model.db.IDbColumn;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaItemStorageLayer.SortDirection;
+import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMixedMediaItem;
 import com.vaguehope.morrigan.model.media.MediaListReference;
@@ -153,7 +153,7 @@ public class DbFace extends DefaultFace {
 						menuMoveEnd(VDirection.DOWN);
 						return true;
 					case 'e':
-						enqueueItem(gui);
+						enqueueSelectedItem(gui);
 						return true;
 					case 't':
 						showEditTagsForSelectedItem(gui);
@@ -205,12 +205,15 @@ public class DbFace extends DefaultFace {
 		return this.mediaItems.get(this.selectedItemIndex);
 	}
 
-	private void enqueueItem (final GUIScreen gui) {
+	private void enqueueSelectedItem (final GUIScreen gui) {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
+		enqueueItem(gui, item);
+	}
 
+	private void enqueueItem (final GUIScreen gui, final IMediaTrack track) {
 		if (this.defaultPlayer != null) {
-			enqueueItem(item, this.defaultPlayer);
+			enqueueItem(track, this.defaultPlayer);
 			return;
 		}
 
@@ -219,7 +222,7 @@ public class DbFace extends DefaultFace {
 			MessageBox.showMessageBox(gui, "Players", "No players available.");
 		}
 		else if (players.size() == 1) {
-			enqueueItem(item, players.iterator().next());
+			enqueueItem(track, players.iterator().next());
 		}
 		else {
 			final List<Action> actions = new ArrayList<Action>();
@@ -232,7 +235,7 @@ public class DbFace extends DefaultFace {
 
 					@Override
 					public void doAction () {
-						enqueueItem(item, player);
+						enqueueItem(track, player);
 					}
 				});
 			}
@@ -241,17 +244,17 @@ public class DbFace extends DefaultFace {
 		}
 	}
 
+	protected void enqueueItem (final IMediaTrack track, final Player player) {
+		player.getQueue().addToQueue(new PlayItem(this.db, track));
+		// TODO protect against long item names?
+		setLastActionMessage(String.format("Enqueued %s in %s.", track, player.getName()));
+		if (track.equals(getSelectedItem())) this.selectedItemIndex += 1;
+	}
+
 	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
 		TagEditor.show(gui, this.db, item);
-	}
-
-	protected void enqueueItem (final IMixedMediaItem item, final Player player) {
-		player.getQueue().addToQueue(new PlayItem(this.db, item));
-		// TODO protect against long item names?
-		setLastActionMessage(String.format("Enqueued %s in %s.", item, player.getName()));
-		if (item.equals(getSelectedItem())) this.selectedItemIndex += 1;
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
@@ -269,12 +272,9 @@ public class DbFace extends DefaultFace {
 				actions.toArray(new Action[actions.size()]));
 	}
 
-	private void askSearch (final GUIScreen gui) throws DbException {
-		final String term = TextInputDialog.showTextInputBox(gui, "Search", "",
-				this.searchTerm != null ? this.searchTerm : "", 50);
-		if (term != null) {
-			this.navigation.startFace(new DbFace(this.navigation, this.mnContext, this.db, this.defaultPlayer, term));
-		}
+	private void askSearch (final GUIScreen gui) {
+		final IMediaTrack track = JumpToDialog.show(gui, this.navigation, this.mnContext, this.defaultPlayer, this.db);
+		if (track != null) enqueueItem(gui, track);
 	}
 
 	@Override
