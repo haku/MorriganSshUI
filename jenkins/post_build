@@ -5,6 +5,6 @@ jar=("./target/com.vaguehope.morrigan.sshui-"*.jar)
 echo "jar=$jar"
 jarname="$(basename "$jar")"
 echo "jarname=$jarname"
-newname="${jarname%%.jar}.$DATE.jar"
+newname="${jarname%%.jar}-$DATE.jar"
 echo "newname=$newname"
 mv -v "$jar" "./target/$newname"
