@@ -74,7 +74,7 @@ public class SeekDialog extends Window {
 			}
 		}
 
-		public void loadItems () {
+		public final void loadItems () {
 			clearItems();
 			for (final SeekHop hop : SeekHop.values()) {
 				addItem(hop);

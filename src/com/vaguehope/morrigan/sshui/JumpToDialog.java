@@ -232,7 +232,7 @@ public class JumpToDialog extends Window {
 	/**
 	 * Call on UI thread.
 	 */
-	protected void setSearchResults (final List<? extends IMediaTrack> results) {
+	protected final void setSearchResults (final List<? extends IMediaTrack> results) {
 		this.lstResults.setItems(results);
 		if (results != null && results.size() > 0) {
 			this.lblMsgs.setText(results.size() + " results.");
