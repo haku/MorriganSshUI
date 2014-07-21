@@ -16,7 +16,7 @@ public class HelpFace extends DefaultFace {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) throws Exception {
+	public boolean onInput (final Key k, final GUIScreen gui) {
 		switch (k.getKind()) {
 			case NormalKey:
 				switch (k.getCharacter()) {

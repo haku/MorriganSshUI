@@ -7,7 +7,7 @@ import com.googlecode.lanterna.screen.ScreenWriter;
 
 public interface Face {
 
-	public interface FaceNavigation {
+	interface FaceNavigation {
 
 		void startFace (Face face);
 
@@ -24,7 +24,7 @@ public interface Face {
 
 	}
 
-	boolean onInput (Key k, GUIScreen gui) throws Exception;
+	boolean onInput (Key k, GUIScreen gui) throws Exception; // NOSONAR throws Exception is part of API.
 
 	void writeScreen (Screen scr, ScreenWriter w);
 
