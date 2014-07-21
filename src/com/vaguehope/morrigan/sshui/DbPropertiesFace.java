@@ -190,7 +190,7 @@ public class DbPropertiesFace extends DefaultFace {
 			writeDbPropsToScreen(scr, w);
 		}
 		else {
-			w.drawString(0, 0, "Unable to show " + this.db.getListName());
+			w.drawString(0, 0, "Unable to show null db.");
 		}
 	}
 
