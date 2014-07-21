@@ -112,7 +112,7 @@ public class DbFace extends DefaultFace {
 
 	private void updateItemDetailsBar (final IMixedMediaItem item) throws MorriganException {
 		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
-		this.itemDetailsBar = PlayerHelper.summariseItem(this.db, item, this.dateFormat);
+		this.itemDetailsBar = PrintingThingsHelper.summariseItem(this.db, item, this.dateFormat);
 	}
 
 	@Override
@@ -268,7 +268,7 @@ public class DbFace extends DefaultFace {
 				actions.add(new SortColumnAction(this.db, col, SortDirection.DESC));
 			}
 		}
-		ActionListDialog.showActionListDialog(gui, "Sort Order", "Current: " + PlayerHelper.sortSummary(this.db),
+		ActionListDialog.showActionListDialog(gui, "Sort Order", "Current: " + PrintingThingsHelper.sortSummary(this.db),
 				actions.toArray(new Action[actions.size()]));
 	}
 
@@ -300,7 +300,7 @@ public class DbFace extends DefaultFace {
 		}
 		else {
 			w.drawString(0, l++, String.format("DB %s: %s   %s",
-					this.db.getListName(), PlayerHelper.dbSummary(this.db), PlayerHelper.sortSummary(this.db)));
+					this.db.getListName(), PrintingThingsHelper.dbSummary(this.db), PrintingThingsHelper.sortSummary(this.db)));
 		}
 
 		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
@@ -339,7 +339,7 @@ public class DbFace extends DefaultFace {
 
 		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
-				PlayerHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.queueScrollTop),
+				PrintingThingsHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.queueScrollTop),
 				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 

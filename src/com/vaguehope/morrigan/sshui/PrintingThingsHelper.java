@@ -20,9 +20,13 @@ import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.util.TimeHelper;
 
-public class PlayerHelper {
+public final class PrintingThingsHelper {
 
-	private static final Logger LOG = LoggerFactory.getLogger(PlayerHelper.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PrintingThingsHelper.class);
+
+	private PrintingThingsHelper () {
+		throw new AssertionError();
+	}
 
 	public static String playerStateMsg (final Player p) {
 		final StringBuilder msg = new StringBuilder();
@@ -69,15 +73,15 @@ public class PlayerHelper {
 			return String.format("%s/%s %s %s",
 					item.getStartCount(), item.getEndCount(),
 					item.getDateLastPlayed() == null ? "" : dateFormat.format(item.getDateLastPlayed()),
-					PlayerHelper.join(list.getTags(item), ", "));
+					PrintingThingsHelper.join(list.getTags(item), ", "));
 		}
-		return PlayerHelper.join(list.getTags(item), ", ");
+		return PrintingThingsHelper.join(list.getTags(item), ", ");
 	}
 
 	public static String summariseItem (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
 		return String.format("%s %s",
 				item.getDateLastPlayed() == null ? "" : dateFormat.format(item.getDateLastPlayed()),
-				PlayerHelper.join(list.getTags(item), ", "));
+				PrintingThingsHelper.join(list.getTags(item), ", "));
 	}
 
 	public static String summariseTags (final Player player) {

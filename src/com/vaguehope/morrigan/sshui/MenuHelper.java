@@ -3,10 +3,14 @@ package com.vaguehope.morrigan.sshui;
 import java.util.Collection;
 import java.util.List;
 
-public class MenuHelper {
+public final class MenuHelper {
 
 	enum VDirection {
 		UP, DOWN;
+	}
+
+	private MenuHelper () {
+		throw new AssertionError();
 	}
 
 	public static <T> int moveListSelectionIndex (final int selectedIndex, final VDirection direction, final int distance, final T[] list) {

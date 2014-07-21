@@ -186,7 +186,7 @@ public class HomeFace extends DefaultFace {
 			for (final Player p : this.players) {
 				if (p.isDisposed()) continue;
 				final String line = String.format("%s\t%s %s %s",
-						p.getId(), p.getName(), PlayerHelper.playerStateMsg(p), PlayerHelper.playingItemTitle(p));
+						p.getId(), p.getName(), PrintingThingsHelper.playerStateMsg(p), PrintingThingsHelper.playingItemTitle(p));
 				if (p.equals(this.selectedItem)) {
 					w.drawString(1, l++, line, ScreenCharacterStyle.Reverse);
 				}

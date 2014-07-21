@@ -87,7 +87,7 @@ public class PlayerFace extends DefaultFace {
 	private void refreshData () {
 		final PlayItem currentItem = this.player.getCurrentItem();
 		if (this.tagSummaryItem == null || !this.tagSummaryItem.equals(currentItem)) {
-			this.tagSummary = PlayerHelper.summariseTags(this.player);
+			this.tagSummary = PrintingThingsHelper.summariseTags(this.player);
 			this.tagSummaryItem = currentItem;
 		}
 
@@ -108,7 +108,7 @@ public class PlayerFace extends DefaultFace {
 			final PlayItem playItem = (PlayItem) this.selectedItem;
 			final IMediaTrack item = playItem.getTrack();
 			if (item != null) {
-				this.itemDetailsBar = PlayerHelper.summariseItemWithPlayCounts(playItem.getList(), item, this.dateFormat);
+				this.itemDetailsBar = PrintingThingsHelper.summariseItemWithPlayCounts(playItem.getList(), item, this.dateFormat);
 			}
 			else {
 				this.itemDetailsBar = "(no track selected)";
@@ -344,11 +344,11 @@ public class PlayerFace extends DefaultFace {
 		int l = 0;
 
 		w.drawString(0, l++, String.format("Player %s: %s   %s   %s.",
-				this.player.getId(), this.player.getName(), PlayerHelper.playerStateMsg(this.player), this.player.getPlaybackOrder()));
-		w.drawString(1, l++, PlayerHelper.playingItemTitle(this.player));
+				this.player.getId(), this.player.getName(), PrintingThingsHelper.playerStateMsg(this.player), this.player.getPlaybackOrder()));
+		w.drawString(1, l++, PrintingThingsHelper.playingItemTitle(this.player));
 		w.drawString(1, l++, this.tagSummary);
 		final PlayerQueue pq = this.player.getQueue();
-		w.drawString(0, l++, PlayerHelper.queueSummary(pq));
+		w.drawString(0, l++, PrintingThingsHelper.queueSummary(pq));
 
 		this.pageSize = terminalSize.getRows() - l - 1;
 		final int selI = this.queue.indexOf(this.selectedItem);
@@ -375,7 +375,7 @@ public class PlayerFace extends DefaultFace {
 
 		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
-				PlayerHelper.scrollSummary(this.queue.size(), this.pageSize, this.queueScrollTop),
+				PrintingThingsHelper.scrollSummary(this.queue.size(), this.pageSize, this.queueScrollTop),
 				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 
