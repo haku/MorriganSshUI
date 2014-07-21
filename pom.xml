@@ -13,7 +13,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<tycho-version>0.19.0</tycho-version>
+		<tycho-version>0.20.0</tycho-version>
 		<lanterna.version>2.1.8</lanterna.version>
 		<sshd.version>0.11.0</sshd.version>
 		<logback.version>1.1.2</logback.version>
