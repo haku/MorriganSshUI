@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
@@ -27,6 +28,7 @@ import com.vaguehope.morrigan.player.OrderHelper.PlaybackOrder;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
+import com.vaguehope.morrigan.sshui.JumpToDialog.JumpResult;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.morrigan.util.TimeHelper;
@@ -62,6 +64,8 @@ public class PlayerFace extends DefaultFace {
 
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+	private final AtomicReference<String> savedSearchTerm = new AtomicReference<String>();
 
 	private long lastDataRefresh = 0;
 	private String tagSummary;
@@ -222,12 +226,11 @@ public class PlayerFace extends DefaultFace {
 		ActionListDialog.showActionListDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
 	}
 
-	private void askSearch (final GUIScreen gui) {
+	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
 		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
-				final IMediaTrack track = JumpToDialog.show(gui, this.navigation, this.mnContext, this.player, (IMixedMediaDb) list);
-				if (track != null) this.player.getQueue().addToQueue(new PlayItem(list, track));
+				askJumpTo(gui, (IMixedMediaDb) list);
 			}
 			else {
 				MessageBox.showMessageBox(gui, "TODO", "Search: " + list);
@@ -235,6 +238,26 @@ public class PlayerFace extends DefaultFace {
 		}
 		else {
 			MessageBox.showMessageBox(gui, "Search", "No list selected.");
+		}
+	}
+
+	private void askJumpTo (final GUIScreen gui, final IMixedMediaDb db) throws DbException, MorriganException {
+		final JumpResult res = JumpToDialog.show(gui, db, this.savedSearchTerm);
+		if (res == null) return;
+		switch (res.getType()) {
+			case ENQUEUE:
+				this.player.getQueue().addToQueue(new PlayItem(db, res.getTrack()));
+				break;
+			case REVEAL:
+				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, db, this.player, res.getTrack()));
+				break;
+			case SHUFFLE_AND_ENQUEUE:
+				PlayerHelper.shuffleAndEnqueue(db, res.getTracks(), this.player);
+				break;
+			case OPEN_VIEW:
+				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, db, this.player, res.getText()));
+				break;
+			default:
 		}
 	}
 

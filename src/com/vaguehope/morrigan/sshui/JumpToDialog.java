@@ -5,6 +5,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,18 +29,17 @@ import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.model.media.MediaTagType;
-import com.vaguehope.morrigan.player.Player;
-import com.vaguehope.morrigan.sshui.Face.FaceNavigation;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class JumpToDialog extends Window {
 
-	private static final int WIDTH = 60;
+	private static final int WIDTH = 70;
 	private static final int HEIGHT = 14;
 	private static final int MAX_RESULTS = 50;
 	private static final Logger LOG = LoggerFactory.getLogger(JumpToDialog.class);
 
 	private final IMixedMediaDb db;
+	private final AtomicReference<String> savedSearchTerm;
 
 	private final Label lblMsgs;
 	private final SearchTextBox txtSearch;
@@ -47,11 +47,13 @@ public class JumpToDialog extends Window {
 	private final Label lblTags;
 
 	private volatile boolean alive = true;
-	private IMediaTrack result;
+	private List<? extends IMediaTrack> searchResults;
+	private JumpResult result;
 
-	public JumpToDialog (final IMixedMediaDb db, final FaceNavigation navigation, final MnContext mnContext, final Player player) {
+	public JumpToDialog (final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) {
 		super(db.getListName());
 		this.db = db;
+		this.savedSearchTerm = savedSearchTerm;
 
 		this.lblMsgs = new Label("");
 		addComponent(this.lblMsgs);
@@ -66,17 +68,23 @@ public class JumpToDialog extends Window {
 		addComponent(this.lblTags);
 
 		final Panel cancelPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		cancelPanel.addComponent(new EmptySpace(WIDTH - 20, 1)); // FIXME magic numbers.
+		cancelPanel.addComponent(new Button("Reveal", new Action() {
+			@Override
+			public void doAction () {
+				acceptRevealResult();
+			}
+		}));
+		cancelPanel.addComponent(new Button("Shuffle", new Action() {
+			@Override
+			public void doAction () {
+				acceptShuffleResult();
+			}
+		}));
+		cancelPanel.addComponent(new EmptySpace(WIDTH - 40, 1)); // FIXME magic numbers.
 		cancelPanel.addComponent(new Button("Open", new Action() {
 			@Override
 			public void doAction () {
-				try {
-					navigation.startFace(new DbFace(navigation, mnContext, db, player, JumpToDialog.this.txtSearch.getText()));
-					close();
-				}
-				catch (DbException e) {
-					MessageBox.showMessageBox(getOwner(), "Error opening DB page.", e.toString());
-				}
+				acceptOpenResult();
 			}
 		}));
 		cancelPanel.addComponent(new Button("Close", new Action() {
@@ -88,6 +96,11 @@ public class JumpToDialog extends Window {
 		addComponent(cancelPanel);
 
 		setSearchResults(null); // Init msgs.
+		final String term = savedSearchTerm.get();
+		if (term != null) {
+			this.txtSearch.setText(term);
+			requestSearch();
+		}
 	}
 
 	@Override
@@ -184,7 +197,7 @@ public class JumpToDialog extends Window {
 		}
 
 		private static List<? extends IMediaTrack> doSearch (final JumpToDialog dlg) throws DbException {
-			final String query = dlg.txtSearch.getText();
+			final String query = dlg.getSearchText();
 			if (query == null || query.length() < 1) return null;
 			return dlg.db.simpleSearch(query, MAX_RESULTS);
 		}
@@ -229,10 +242,17 @@ public class JumpToDialog extends Window {
 		}
 	}
 
+	protected String getSearchText () {
+		final String text = this.txtSearch.getText();
+		this.savedSearchTerm.set(text);
+		return text;
+	}
+
 	/**
 	 * Call on UI thread.
 	 */
 	protected final void setSearchResults (final List<? extends IMediaTrack> results) {
+		this.searchResults = results;
 		this.lstResults.setItems(results);
 		if (results != null && results.size() > 0) {
 			this.lblMsgs.setText(results.size() + " results.");
@@ -249,12 +269,34 @@ public class JumpToDialog extends Window {
 		this.lblTags.setText(msg);
 	}
 
-	protected void acceptResult () {
-		this.result = this.lstResults.getSelectedTrack();
+	protected void acceptEnqueueResult () {
+		final IMediaTrack track = this.lstResults.getSelectedTrack();
+		if (track != null) setResult(new JumpResult(JumpType.ENQUEUE, this.txtSearch.getText(), track));
+	}
+
+	protected void acceptOpenResult () {
+		final String text = this.txtSearch.getText();
+		if (text != null && text.length() > 0) setResult(new JumpResult(JumpType.OPEN_VIEW, text));
+	}
+
+	protected void acceptRevealResult () {
+		final IMediaTrack track = this.lstResults.getSelectedTrack();
+		if (track != null) setResult(new JumpResult(JumpType.REVEAL, this.txtSearch.getText(), track));
+	}
+
+	protected void acceptShuffleResult () {
+		if (this.searchResults != null && this.searchResults.size() > 0) {
+			setResult(new JumpResult(JumpType.SHUFFLE_AND_ENQUEUE, this.txtSearch.getText(), this.searchResults));
+		}
+	}
+
+	private void setResult (final JumpResult res) {
+		if (this.result != null) throw new IllegalStateException();
+		this.result = res;
 		close();
 	}
 
-	public IMediaTrack getResult () {
+	public JumpResult getResult () {
 		return this.result;
 	}
 
@@ -271,7 +313,7 @@ public class JumpToDialog extends Window {
 		public Result keyboardInteraction (final Key key) {
 			switch (key.getKind()) {
 				case Enter:
-					this.dialog.acceptResult();
+					this.dialog.acceptEnqueueResult();
 					return Result.EVENT_HANDLED;
 				case NormalKey:
 				case Backspace:
@@ -342,7 +384,7 @@ public class JumpToDialog extends Window {
 		protected Result unhandledKeyboardEvent (final Key key) {
 			switch (key.getKind()) {
 				case Enter:
-					this.dialog.acceptResult();
+					this.dialog.acceptEnqueueResult();
 					return Result.EVENT_HANDLED;
 				default:
 					return Result.EVENT_NOT_HANDLED;
@@ -355,8 +397,63 @@ public class JumpToDialog extends Window {
 
 	}
 
-	public static IMediaTrack show (final GUIScreen owner, final FaceNavigation navigation, final MnContext mnContext, final Player player, final IMixedMediaDb db) {
-		final JumpToDialog dialog = new JumpToDialog(db, navigation, mnContext, player);
+	public enum JumpType {
+		ENQUEUE,
+		REVEAL,
+		SHUFFLE_AND_ENQUEUE,
+		OPEN_VIEW;
+	}
+
+	public static class JumpResult {
+
+		private final JumpType type;
+		private final String text;
+		private final IMediaTrack track;
+		private final List<? extends IMediaTrack> tracks;
+
+		public JumpResult (final JumpType type, final String text) {
+			this(type, text, null, null);
+		}
+
+		public JumpResult (final JumpType type, final String text, final IMediaTrack track) {
+			this(type, text, track, null);
+		}
+
+		public JumpResult (final JumpType type, final String text, final List<? extends IMediaTrack> tracks) {
+			this(type, text, null, tracks);
+		}
+
+		private JumpResult (final JumpType type, final String text, final IMediaTrack track, final List<? extends IMediaTrack> tracks) {
+			if (type == null) throw new IllegalArgumentException("type not specified");
+			this.type = type;
+			this.track = track;
+			this.text = text;
+			this.tracks = tracks;
+		}
+
+		public JumpType getType () {
+			return this.type;
+		}
+
+		public String getText () {
+			if (this.text == null) throw new IllegalStateException("text not set.");
+			return this.text;
+		}
+
+		public IMediaTrack getTrack () {
+			if (this.track == null) throw new IllegalStateException("track not set.");
+			return this.track;
+		}
+
+		public List<? extends IMediaTrack> getTracks () {
+			if (this.tracks == null) throw new IllegalStateException("tracks not set.");
+			return this.tracks;
+		}
+
+	}
+
+	public static JumpResult show (final GUIScreen owner, final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) {
+		final JumpToDialog dialog = new JumpToDialog(db, savedSearchTerm);
 		owner.showWindow(dialog, GUIScreen.Position.CENTER);
 		return dialog.getResult();
 	}

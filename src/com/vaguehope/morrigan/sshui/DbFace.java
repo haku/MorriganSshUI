@@ -5,11 +5,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.ActionListDialog;
-import com.googlecode.lanterna.gui.dialog.MessageBox;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.input.Key.Kind;
 import com.googlecode.lanterna.screen.Screen;
@@ -26,6 +26,7 @@ import com.vaguehope.morrigan.model.media.IMixedMediaItem;
 import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
+import com.vaguehope.morrigan.sshui.JumpToDialog.JumpResult;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.morrigan.util.TimeHelper;
@@ -56,6 +57,8 @@ public class DbFace extends DefaultFace {
 
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+	private final AtomicReference<String> savedSearchTerm = new AtomicReference<String>();
 
 	private List<IMixedMediaItem> mediaItems;
 	private int selectedItemIndex = -1;
@@ -94,6 +97,11 @@ public class DbFace extends DefaultFace {
 		this.defaultPlayer = defaultPlayer;
 		this.searchTerm = searchTerm;
 		refreshData();
+	}
+
+	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer, final IMediaTrack revealItem) throws DbException, MorriganException {
+		this(navigation, mnContext, db, defaultPlayer, (String) null);
+		revealItem(revealItem);
 	}
 
 	private void refreshData () throws DbException {
@@ -200,31 +208,37 @@ public class DbFace extends DefaultFace {
 		updateItemDetailsBar(getSelectedItem());
 	}
 
+	private void setSelectedItem (final int index) throws MorriganException {
+		this.selectedItemIndex = index;
+		updateItemDetailsBar(getSelectedItem());
+	}
+
+	private void revealItem (final IMediaTrack track) throws MorriganException {
+		final int i = this.mediaItems.indexOf(track);
+		if (i >= 0) {
+			setSelectedItem(i);
+		}
+		else {
+			setLastActionMessage("Item not in view: " + track); // TODO open new DbFace here?
+		}
+	}
+
 	private IMixedMediaItem getSelectedItem () {
 		if (this.selectedItemIndex < 0) return null;
 		return this.mediaItems.get(this.selectedItemIndex);
 	}
 
-	private void enqueueSelectedItem (final GUIScreen gui) {
-		final IMixedMediaItem item = getSelectedItem();
-		if (item == null) return;
-		enqueueItem(gui, item);
-	}
-
-	private void enqueueItem (final GUIScreen gui, final IMediaTrack track) {
-		if (this.defaultPlayer != null) {
-			enqueueItem(track, this.defaultPlayer);
-			return;
-		}
-
+	private Player getPlayer (final GUIScreen gui, final String title) {
+		if (this.defaultPlayer != null) return this.defaultPlayer;
 		final Collection<Player> players = this.mnContext.getPlayerReader().getPlayers();
 		if (players == null || players.size() < 1) {
-			MessageBox.showMessageBox(gui, "Players", "No players available.");
+			return null;
 		}
 		else if (players.size() == 1) {
-			enqueueItem(track, players.iterator().next());
+			return players.iterator().next();
 		}
 		else {
+			final AtomicReference<Player> ret = new AtomicReference<Player>();
 			final List<Action> actions = new ArrayList<Action>();
 			for (final Player player : players) {
 				actions.add(new Action() {
@@ -235,13 +249,25 @@ public class DbFace extends DefaultFace {
 
 					@Override
 					public void doAction () {
-						enqueueItem(track, player);
+						ret.set(player);
 					}
 				});
 			}
-			ActionListDialog.showActionListDialog(gui, "Enqueue", "Select player",
+			ActionListDialog.showActionListDialog(gui, title, "Select player",
 					actions.toArray(new Action[actions.size()]));
+			return ret.get();
 		}
+	}
+
+	private void enqueueSelectedItem (final GUIScreen gui) {
+		final IMixedMediaItem item = getSelectedItem();
+		if (item == null) return;
+		enqueueItem(gui, item);
+	}
+
+	private void enqueueItem (final GUIScreen gui, final IMediaTrack track) {
+		final Player player = getPlayer(gui, "Enqueue");
+		if (player != null) enqueueItem(track, player);
 	}
 
 	protected void enqueueItem (final IMediaTrack track, final Player player) {
@@ -249,6 +275,11 @@ public class DbFace extends DefaultFace {
 		// TODO protect against long item names?
 		setLastActionMessage(String.format("Enqueued %s in %s.", track, player.getName()));
 		if (track.equals(getSelectedItem())) this.selectedItemIndex += 1;
+	}
+
+	private void shuffleAndEnqueue (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
+		final Player player = getPlayer(gui, "Shuffle and enqueue");
+		if (player != null) PlayerHelper.shuffleAndEnqueue(this.db, tracks, player);
 	}
 
 	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
@@ -272,9 +303,24 @@ public class DbFace extends DefaultFace {
 				actions.toArray(new Action[actions.size()]));
 	}
 
-	private void askSearch (final GUIScreen gui) {
-		final IMediaTrack track = JumpToDialog.show(gui, this.navigation, this.mnContext, this.defaultPlayer, this.db);
-		if (track != null) enqueueItem(gui, track);
+	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+		final JumpResult res = JumpToDialog.show(gui, this.db, this.savedSearchTerm);
+		if (res == null) return;
+		switch (res.getType()) {
+			case ENQUEUE:
+				enqueueItem(gui, res.getTrack());
+				break;
+			case REVEAL:
+				revealItem(res.getTrack());
+				break;
+			case SHUFFLE_AND_ENQUEUE:
+				shuffleAndEnqueue(gui, res.getTracks());
+				break;
+			case OPEN_VIEW:
+				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, this.db, this.defaultPlayer, res.getText()));
+				break;
+			default:
+		}
 	}
 
 	@Override
