@@ -103,7 +103,7 @@ public final class PrintingThingsHelper {
 	}
 
 	public static String queueSummary (final PlayerQueue queue) {
-		final int size = queue.getQueueList().size();
+		final int size = queue.size();
 		if (size == 0) return "Queue is empty.";
 		final DurationData d = queue.getQueueTotalDuration();
 		return String.format("Queue: %s items totaling %s%s.",
