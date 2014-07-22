@@ -21,7 +21,10 @@ import com.vaguehope.morrigan.tasks.AsyncTasksRegisterTracker;
 public class Activator implements BundleActivator {
 
 	private static final int SSHD_PORT = 14022; // TODO make config.
+	// can be DSA/RSA/EC (http://docs.oracle.com/javase/6/docs/technotes/guides/security/StandardNames.html#KeyPairGenerator)
 	private static final String HOSTKEY_NAME = "hostkey.ser";
+	private static final String HOSTKEY_TYPE = "RSA";
+	private static final int HOSTKEY_LENGTH = 1024;
 	private static final long IDLE_TIMEOUT = 24 * 60 * 60 * 1000L; // A day.
 	private static final Logger LOG = LoggerFactory.getLogger(Activator.class);
 
@@ -47,7 +50,7 @@ public class Activator implements BundleActivator {
 
 		this.sshd = SshServer.setUpDefaultServer();
 		this.sshd.setPort(SSHD_PORT);
-		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.getAbsolutePath()));
+		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.getAbsolutePath(), HOSTKEY_TYPE, HOSTKEY_LENGTH));
 		this.sshd.setShellFactory(this.mnCommandFactory);
 		this.sshd.setPasswordAuthenticator(new MnPasswordAuthenticator());
 		this.sshd.setPublickeyAuthenticator(new UserPublickeyAuthenticator());
