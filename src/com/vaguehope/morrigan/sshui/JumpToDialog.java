@@ -29,6 +29,7 @@ import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.model.media.MediaTagType;
+import com.vaguehope.morrigan.sshui.util.ReflectionHelper;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class JumpToDialog extends Window {
@@ -67,33 +68,41 @@ public class JumpToDialog extends Window {
 		this.lblTags = new Label("", WIDTH);
 		addComponent(this.lblTags);
 
-		final Panel cancelPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		cancelPanel.addComponent(new Button("Reveal", new Action() {
+		final Panel btnPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
+		btnPanel.addComponent(new Button("Reveal", new Action() {
 			@Override
 			public void doAction () {
 				acceptRevealResult();
 			}
 		}));
-		cancelPanel.addComponent(new Button("Shuffle", new Action() {
+		btnPanel.addComponent(new Button("Shuffle", new Action() {
 			@Override
 			public void doAction () {
 				acceptShuffleResult();
 			}
 		}));
-		cancelPanel.addComponent(new EmptySpace(WIDTH - 40, 1)); // FIXME magic numbers.
-		cancelPanel.addComponent(new Button("Open", new Action() {
+		btnPanel.addComponent(new EmptySpace(WIDTH - 40, 1)); // FIXME magic numbers.
+		btnPanel.addComponent(new Button("Open", new Action() {
 			@Override
 			public void doAction () {
 				acceptOpenResult();
 			}
 		}));
-		cancelPanel.addComponent(new Button("Close", new Action() {
+		btnPanel.addComponent(new Button("Close", new Action() {
 			@Override
 			public void doAction () {
 				close();
 			}
 		}));
-		addComponent(cancelPanel);
+		addComponent(btnPanel);
+
+		final Panel contentPane = (Panel) ReflectionHelper.readField(this, "contentPane");
+		contentPane.addShortcut(Key.Kind.Escape, new Action() {
+			@Override
+			public void doAction () {
+				close();
+			}
+		});
 
 		setSearchResults(null); // Init msgs.
 		final String term = savedSearchTerm.get();
