@@ -46,14 +46,12 @@ public class DbFace extends DefaultFace {
 			"      q\tback a page\n" +
 			"      h\tthis help text";
 
-	private static final int MAX_SEARCH_RESULTS = 200;
 	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
 
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final IMixedMediaDb db;
 	private final Player defaultPlayer;
-	private final String searchTerm;
 
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -70,10 +68,6 @@ public class DbFace extends DefaultFace {
 	private IMixedMediaItem itemDetailsBarItem;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
-		this(navigation, mnContext, listReference, null);
-	}
-
-	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference, final String searchTerm) throws DbException, MorriganException {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 
@@ -87,30 +81,24 @@ public class DbFace extends DefaultFace {
 		}
 
 		this.defaultPlayer = null;
-		this.searchTerm = searchTerm;
 	}
 
-	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer, final String searchTerm) throws DbException {
+	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer) throws MorriganException {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.db = db;
 		this.defaultPlayer = defaultPlayer;
-		this.searchTerm = searchTerm;
 		refreshData();
 	}
 
-	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer, final IMediaTrack revealItem) throws DbException, MorriganException {
-		this(navigation, mnContext, db, defaultPlayer, (String) null);
+	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer, final IMediaTrack revealItem) throws MorriganException {
+		this(navigation, mnContext, db, defaultPlayer);
 		revealItem(revealItem);
 	}
 
-	private void refreshData () throws DbException {
-		if (this.searchTerm != null) {
-			this.mediaItems = this.db.simpleSearch(this.searchTerm, MAX_SEARCH_RESULTS);
-		}
-		else {
-			this.mediaItems = this.db.getMediaItems();
-		}
+	private void refreshData () throws MorriganException {
+		this.db.read();
+		this.mediaItems = this.db.getMediaItems();
 	}
 
 	protected void setLastActionMessage (final String lastActionMessage) {
@@ -289,8 +277,6 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
-		if (this.searchTerm != null) return; // TODO Sort search results.
-
 		final List<IDbColumn> cols = this.db.getDbLayer().getMediaTblColumns();
 		final List<Action> actions = new ArrayList<Action>();
 		for (final IDbColumn col : cols) {
@@ -317,7 +303,9 @@ public class DbFace extends DefaultFace {
 				shuffleAndEnqueue(gui, res.getTracks());
 				break;
 			case OPEN_VIEW:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, this.db, this.defaultPlayer, res.getText()));
+				this.navigation.startFace(new DbFace(this.navigation, this.mnContext,
+						this.mnContext.getMediaFactory().getLocalMixedMediaDb(this.db.getDbPath(), res.getText()),
+						this.defaultPlayer));
 				break;
 			default:
 		}
@@ -340,14 +328,10 @@ public class DbFace extends DefaultFace {
 		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
 
-		if (this.searchTerm != null) {
-			w.drawString(0, l++, String.format("DB %s: %s results for '%s'",
-					this.db.getListName(), this.mediaItems.size(), this.searchTerm));
-		}
-		else {
-			w.drawString(0, l++, String.format("DB %s: %s   %s",
-					this.db.getListName(), PrintingThingsHelper.dbSummary(this.db), PrintingThingsHelper.sortSummary(this.db)));
-		}
+		w.drawString(0, l++, String.format("DB %s: %s   %s",
+				this.db.getListName(),
+				PrintingThingsHelper.dbSummary(this.db),
+				PrintingThingsHelper.sortSummary(this.db)));
 
 		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
 			this.lastActionMessage = null;

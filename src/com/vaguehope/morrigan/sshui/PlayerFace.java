@@ -255,7 +255,9 @@ public class PlayerFace extends DefaultFace {
 				PlayerHelper.shuffleAndEnqueue(db, res.getTracks(), this.player);
 				break;
 			case OPEN_VIEW:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, db, this.player, res.getText()));
+				this.navigation.startFace(new DbFace(this.navigation, this.mnContext,
+						this.mnContext.getMediaFactory().getLocalMixedMediaDb(db.getDbPath(), res.getText()),
+						this.player));
 				break;
 			default:
 		}
