@@ -12,6 +12,7 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.morrigan.config.Config;
 import com.vaguehope.morrigan.model.media.MediaFactoryTracker;
 import com.vaguehope.morrigan.player.PlayerReaderTracker;
 import com.vaguehope.morrigan.sshui.ssh.MnPasswordAuthenticator;
@@ -39,7 +40,7 @@ public class Activator implements BundleActivator {
 	public void start (final BundleContext context) throws IOException, GeneralSecurityException {
 		if (this.sshd != null) throw new IllegalStateException("Already started.");
 
-		final File hostKey = new File(HOSTKEY_NAME).getAbsoluteFile();
+		final File hostKey = new File(new File(Config.getConfigDir()), HOSTKEY_NAME);
 		LOG.info("Host key: {}", hostKey.getAbsolutePath());
 
 		this.playerReaderTracker = new PlayerReaderTracker(context);
