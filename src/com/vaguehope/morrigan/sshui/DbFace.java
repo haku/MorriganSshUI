@@ -40,7 +40,8 @@ public class DbFace extends DefaultFace {
 			"      /\tsearch DB\n" +
 			"      o\tsort order\n" +
 			"      e\tenqueue item\n" +
-			"      t\topen tag editor\n" +
+			"      E\tenqueue DB\n" +
+			"      t\ttag editor\n" +
 			"      r\trefresh query\n" +
 			"     f6\tDB properties\n" +
 			"      q\tback a page\n" +
@@ -151,6 +152,9 @@ public class DbFace extends DefaultFace {
 					case 'e':
 						enqueueSelectedItem(gui);
 						return true;
+					case 'E':
+						enqueueDb(gui);
+						return true;
 					case 't':
 						showEditTagsForSelectedItem(gui);
 						return true;
@@ -247,6 +251,11 @@ public class DbFace extends DefaultFace {
 		}
 	}
 
+	private void enqueueDb (final GUIScreen gui) {
+		final Player player = getPlayer(gui, "Enqueue DB");
+		if (player != null) enqueuePlayItem(new PlayItem(this.db, null), player);
+	}
+
 	private void enqueueSelectedItem (final GUIScreen gui) {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
@@ -254,15 +263,17 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void enqueueItem (final GUIScreen gui, final IMediaTrack track) {
-		final Player player = getPlayer(gui, "Enqueue");
-		if (player != null) enqueueItem(track, player);
+		final Player player = getPlayer(gui, "Enqueue Item");
+		if (player != null) {
+			enqueuePlayItem(new PlayItem(this.db, track), player);
+			if (track.equals(getSelectedItem())) this.selectedItemIndex += 1;
+		}
 	}
 
-	protected void enqueueItem (final IMediaTrack track, final Player player) {
-		player.getQueue().addToQueue(new PlayItem(this.db, track));
+	protected void enqueuePlayItem (final PlayItem playItem, final Player player) {
+		player.getQueue().addToQueue(playItem);
 		// TODO protect against long item names?
-		setLastActionMessage(String.format("Enqueued %s in %s.", track, player.getName()));
-		if (track.equals(getSelectedItem())) this.selectedItemIndex += 1;
+		setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
 	}
 
 	private void shuffleAndEnqueue (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
