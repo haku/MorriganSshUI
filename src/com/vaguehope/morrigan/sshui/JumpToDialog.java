@@ -88,7 +88,7 @@ public class JumpToDialog extends Window {
 				acceptShuffleResult();
 			}
 		}));
-		btnPanel.addComponent(new EmptySpace(WIDTH - 51, 1)); // FIXME magic numbers.
+		btnPanel.addComponent(new EmptySpace(WIDTH - 58, 1)); // FIXME magic numbers.
 		btnPanel.addComponent(new Button("Open", new Action() {
 			@Override
 			public void doAction () {
