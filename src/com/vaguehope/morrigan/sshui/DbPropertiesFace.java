@@ -2,9 +2,7 @@ package com.vaguehope.morrigan.sshui;
 
 import java.io.File;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.DialogButtons;
@@ -35,11 +33,12 @@ public class DbPropertiesFace extends DefaultFace {
 			"       h\tthis help text";
 
 	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
-	private static final Logger LOG = LoggerFactory.getLogger(DbPropertiesFace.class);
 
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final IMixedMediaDb db;
+
+	private final AtomicReference<File> savedInitialDir = new AtomicReference<File>();
 
 	private List<String> sources;
 	private Object selectedItem;
@@ -48,10 +47,12 @@ public class DbPropertiesFace extends DefaultFace {
 	private String lastActionMessage = null;
 	private long lastActionMessageTime = 0;
 
+
 	public DbPropertiesFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db) throws MorriganException {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.db = db;
+		this.savedInitialDir.set(new File(System.getProperty("user.home")));
 		refreshData();
 	}
 
@@ -101,7 +102,7 @@ public class DbPropertiesFace extends DefaultFace {
 						refreshData();
 						return true;
 					case 'n':
-						askAddSource();
+						askAddSource(gui);
 						return true;
 					case 'u':
 						rescanSources();
@@ -135,19 +136,11 @@ public class DbPropertiesFace extends DefaultFace {
 		}
 	}
 
-	private void askAddSource () {
-		this.navigation.startFace(new DirChooserFace(this.navigation, new File(System.getProperty("user.home"))));
-	}
-
-	@Override
-	public void onFaceResult (final Object result) throws MorriganException {
-		if (result instanceof File) {
-			final File file = (File) result;
-			this.db.addSource(file.getAbsolutePath());
+	private void askAddSource (final GUIScreen gui) throws MorriganException {
+		final File dir = DirDialog.show(gui, "Add Source", this.savedInitialDir);
+		if (dir != null) {
+			this.db.addSource(dir.getAbsolutePath());
 			refreshData();
-		}
-		else {
-			LOG.error("Unexpected face result: {}", result);
 		}
 	}
 
