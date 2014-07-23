@@ -8,6 +8,7 @@ import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
+import com.vaguehope.morrigan.player.PlayerQueue;
 
 public final class PlayerHelper {
 
@@ -18,8 +19,13 @@ public final class PlayerHelper {
 	public static void shuffleAndEnqueue (final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks, final Player player) {
 		final List<IMediaTrack> shuffeledList = new ArrayList<IMediaTrack>(tracks);
 		Collections.shuffle(shuffeledList);
-		for (final IMediaTrack track : shuffeledList) {
-			player.getQueue().addToQueue(new PlayItem(db, track));
+		enqueueAll(db, shuffeledList, player);
+	}
+
+	public static void enqueueAll (final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks, final Player player) {
+		final PlayerQueue queue = player.getQueue();
+		for (final IMediaTrack track : tracks) {
+			queue.addToQueue(new PlayItem(db, track));
 		}
 	}
 

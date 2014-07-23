@@ -276,6 +276,14 @@ public class DbFace extends DefaultFace {
 		setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
 	}
 
+	private void enqueueItems (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
+		final Player player = getPlayer(gui, "Enqueue Items");
+		if (player != null) {
+			PlayerHelper.enqueueAll(this.db, tracks, player);
+			setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
+		}
+	}
+
 	private void shuffleAndEnqueue (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
 		final Player player = getPlayer(gui, "Shuffle and enqueue");
 		if (player != null) PlayerHelper.shuffleAndEnqueue(this.db, tracks, player);
@@ -305,7 +313,7 @@ public class DbFace extends DefaultFace {
 		if (res == null) return;
 		switch (res.getType()) {
 			case ENQUEUE:
-				enqueueItem(gui, res.getTrack());
+				enqueueItems(gui, res.getTracks());
 				break;
 			case REVEAL:
 				revealItem(res.getTrack());

@@ -246,7 +246,7 @@ public class PlayerFace extends DefaultFace {
 		if (res == null) return;
 		switch (res.getType()) {
 			case ENQUEUE:
-				this.player.getQueue().addToQueue(new PlayItem(db, res.getTrack()));
+				PlayerHelper.enqueueAll(db, res.getTracks(), this.player);
 				break;
 			case REVEAL:
 				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, db, this.player, res.getTrack()));

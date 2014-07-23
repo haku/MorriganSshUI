@@ -1,5 +1,6 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,7 +37,7 @@ public class JumpToDialog extends Window {
 
 	private static final int WIDTH = 70;
 	private static final int HEIGHT = 14;
-	private static final int MAX_RESULTS = 50;
+	private static final int MAX_RESULTS = 100;
 	private static final Logger LOG = LoggerFactory.getLogger(JumpToDialog.class);
 
 	private final IMixedMediaDb db;
@@ -75,13 +76,19 @@ public class JumpToDialog extends Window {
 				acceptRevealResult();
 			}
 		}));
+		btnPanel.addComponent(new Button("Enqueue All", new Action() {
+			@Override
+			public void doAction () {
+				acceptEnqueueAllResult();
+			}
+		}));
 		btnPanel.addComponent(new Button("Shuffle", new Action() {
 			@Override
 			public void doAction () {
 				acceptShuffleResult();
 			}
 		}));
-		btnPanel.addComponent(new EmptySpace(WIDTH - 40, 1)); // FIXME magic numbers.
+		btnPanel.addComponent(new EmptySpace(WIDTH - 51, 1)); // FIXME magic numbers.
 		btnPanel.addComponent(new Button("Open", new Action() {
 			@Override
 			public void doAction () {
@@ -283,6 +290,12 @@ public class JumpToDialog extends Window {
 		if (track != null) setResult(new JumpResult(JumpType.ENQUEUE, this.txtSearch.getText(), track));
 	}
 
+	protected void acceptEnqueueAllResult () {
+		if (this.searchResults != null && this.searchResults.size() > 0) {
+			setResult(new JumpResult(JumpType.ENQUEUE, this.txtSearch.getText(), this.searchResults));
+		}
+	}
+
 	protected void acceptOpenResult () {
 		final String text = this.txtSearch.getText();
 		if (text != null && text.length() > 0) setResult(new JumpResult(JumpType.OPEN_VIEW, text));
@@ -455,7 +468,10 @@ public class JumpToDialog extends Window {
 		}
 
 		public List<? extends IMediaTrack> getTracks () {
-			if (this.tracks == null) throw new IllegalStateException("tracks not set.");
+			if (this.tracks == null) {
+				if (this.track != null) return Collections.singletonList(this.track);
+				throw new IllegalStateException("tracks not set.");
+			}
 			return this.tracks;
 		}
 
