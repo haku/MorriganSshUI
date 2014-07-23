@@ -68,6 +68,14 @@ public final class PrintingThingsHelper {
 		return currentItem != null && currentItem.hasTrack() ? currentItem.getTrack().getTitle() : "";
 	}
 
+	public static String listTitleAndOrder(final Player p) {
+		final PlayItem currentItem = p.getCurrentItem();
+		if (currentItem != null && currentItem.hasList()) {
+			return String.format("%s %s", currentItem.getList().getListName(), p.getPlaybackOrder());
+		}
+		return String.valueOf(p.getPlaybackOrder());
+	}
+
 	public static String summariseItemWithPlayCounts (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
 		if (item.getStartCount() > 0 || item.getEndCount() > 0) {
 			return String.format("%s/%s %s %s",

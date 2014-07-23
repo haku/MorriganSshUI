@@ -369,7 +369,10 @@ public class PlayerFace extends DefaultFace {
 		int l = 0;
 
 		w.drawString(0, l++, String.format("Player %s: %s   %s   %s.",
-				this.player.getId(), this.player.getName(), PrintingThingsHelper.playerStateMsg(this.player), this.player.getPlaybackOrder()));
+				this.player.getId(),
+				this.player.getName(),
+				PrintingThingsHelper.playerStateMsg(this.player),
+				PrintingThingsHelper.listTitleAndOrder(this.player)));
 		w.drawString(1, l++, PrintingThingsHelper.playingItemTitle(this.player));
 		w.drawString(1, l++, this.tagSummary);
 		final PlayerQueue pq = this.player.getQueue();
