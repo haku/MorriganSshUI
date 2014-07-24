@@ -1,7 +1,6 @@
 TODO
 ====
 
-- Copy file(s) to dir
 - metadata display
   - last played
 - Multi select
