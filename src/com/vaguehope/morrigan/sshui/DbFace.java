@@ -46,6 +46,7 @@ public class DbFace extends DefaultFace {
 			"      E\tenqueue DB\n" +
 			"      t\ttag editor\n" +
 			"      w\tcopy file\n" +
+			"      d\ttoggle enabled\n" +
 			"      r\trefresh query\n" +
 			"     f6\tDB properties\n" +
 			"      q\tback a page\n" +
@@ -156,7 +157,7 @@ public class DbFace extends DefaultFace {
 						menuMoveEnd(VDirection.DOWN);
 						return true;
 					case 'e':
-						enqueueSelectedItem(gui);
+						enqueueSelection(gui);
 						return true;
 					case 'E':
 						enqueueDb(gui);
@@ -166,6 +167,9 @@ public class DbFace extends DefaultFace {
 						return true;
 					case 'w':
 						askExportSelection(gui);
+						return true;
+					case 'd':
+						toggleEnabledSelection();
 						return true;
 					case 'o':
 						askSortColumn(gui);
@@ -263,7 +267,7 @@ public class DbFace extends DefaultFace {
 		if (player != null) enqueuePlayItem(new PlayItem(this.db, null), player);
 	}
 
-	private void enqueueSelectedItem (final GUIScreen gui) {
+	private void enqueueSelection (final GUIScreen gui) {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
 		enqueueItem(gui, item);
@@ -311,6 +315,15 @@ public class DbFace extends DefaultFace {
 		final MorriganTask task = this.mnContext.getMediaFactory().getMediaFileCopyTask(this.db, Collections.singletonList(item), dir);
 		this.mnContext.getAsyncTasksRegister().scheduleTask(task);
 		setLastActionMessage(String.format("Started copying %s ...", item));
+	}
+
+	private void toggleEnabledSelection () throws MorriganException {
+		final IMixedMediaItem item = getSelectedItem();
+		if (item == null) return;
+
+		final boolean target = !item.isEnabled();
+		this.db.setItemEnabled(item, target);
+		setLastActionMessage(String.format("%s: %s", target ? "Enabled" : "Disabled", item));
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
@@ -394,7 +407,18 @@ public class DbFace extends DefaultFace {
 			if (i >= this.queueScrollTop + this.pageSize) break;
 			final IMixedMediaItem item = this.mediaItems.get(i);
 			final ScreenCharacterStyle[] style = i == this.selectedItemIndex ? SELECTED : UNSELECTED;
-			w.drawString(1, l, String.valueOf(item), style);
+			final String name = String.valueOf(item);
+			w.drawString(1, l, name, style);
+
+			if (item.isMissing()) {
+				scr.putString(0, l, "m", Color.YELLOW, Color.DEFAULT);
+				scr.putString(name.length() + 2, l, "(missing)", Color.YELLOW, Color.DEFAULT);
+			}
+			else if (!item.isEnabled()) {
+				scr.putString(0, l, "d", Color.RED, Color.DEFAULT);
+				scr.putString(name.length() + 2, l, "(disabled)", Color.RED, Color.DEFAULT);
+			}
+
 			if (item.getStartCount() > 0 || item.getEndCount() > 0) {
 				final String counts = String.format("%s/%s", item.getStartCount(), item.getEndCount());
 				w.drawString(terminalSize.getColumns() - 10 - counts.length(), l, counts, style);
