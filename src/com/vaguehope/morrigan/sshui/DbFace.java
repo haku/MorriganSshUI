@@ -45,6 +45,7 @@ public class DbFace extends DefaultFace {
 			"      e\tenqueue item\n" +
 			"      E\tenqueue DB\n" +
 			"      t\ttag editor\n" +
+			"      w\tcopy file\n" +
 			"      r\trefresh query\n" +
 			"     f6\tDB properties\n" +
 			"      q\tback a page\n" +
@@ -170,8 +171,6 @@ public class DbFace extends DefaultFace {
 						askSortColumn(gui);
 						return true;
 					case '/':
-					case 's':
-					case 'f':
 						askSearch(gui);
 						return true;
 					case 'r':
