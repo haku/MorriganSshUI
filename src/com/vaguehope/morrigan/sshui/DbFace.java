@@ -310,7 +310,7 @@ public class DbFace extends DefaultFace {
 		this.savedInitialDir.compareAndSet(null, new File(System.getProperty("user.home")));
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
-		final File dir = DirDialog.show(gui, "Export track", this.savedInitialDir);
+		final File dir = DirDialog.show(gui, "Export track", "Export", this.savedInitialDir);
 		if (dir == null) return;
 		final MorriganTask task = this.mnContext.getMediaFactory().getMediaFileCopyTask(this.db, Collections.singletonList(item), dir);
 		this.mnContext.getAsyncTasksRegister().scheduleTask(task);

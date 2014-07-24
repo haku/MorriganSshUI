@@ -30,7 +30,7 @@ public class DirDialog extends Window {
 
 	private File result;
 
-	public DirDialog (final String title, final AtomicReference<File> savedInitialDir) {
+	public DirDialog (final String title, final String actionLabel, final AtomicReference<File> savedInitialDir) {
 		super(title);
 		this.savedInitialDir = savedInitialDir;
 
@@ -41,7 +41,7 @@ public class DirDialog extends Window {
 		addComponent(this.lstDirs);
 
 		final Panel btnPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		btnPanel.addComponent(new Button("Add", new Action() {
+		btnPanel.addComponent(new Button(actionLabel, new Action() {
 			@Override
 			public void doAction () {
 				acceptResult();
@@ -142,8 +142,8 @@ public class DirDialog extends Window {
 
 	}
 
-	public static File show (final GUIScreen owner, final String title, final AtomicReference<File> savedInitialDir) {
-		final DirDialog dialog = new DirDialog(title, savedInitialDir);
+	public static File show (final GUIScreen owner, final String title, final String actionLabel, final AtomicReference<File> savedInitialDir) {
+		final DirDialog dialog = new DirDialog(title, actionLabel, savedInitialDir);
 		owner.showWindow(dialog, GUIScreen.Position.CENTER);
 		return dialog.getResult();
 	}

@@ -137,7 +137,7 @@ public class DbPropertiesFace extends DefaultFace {
 	}
 
 	private void askAddSource (final GUIScreen gui) throws MorriganException {
-		final File dir = DirDialog.show(gui, "Add Source", this.savedInitialDir);
+		final File dir = DirDialog.show(gui, "Add Source", "Add", this.savedInitialDir);
 		if (dir != null) {
 			this.db.addSource(dir.getAbsolutePath());
 			refreshData();
