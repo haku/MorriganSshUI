@@ -1,9 +1,11 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,6 +31,7 @@ import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.JumpToDialog.JumpResult;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
+import com.vaguehope.morrigan.tasks.MorriganTask;
 import com.vaguehope.morrigan.util.TimeHelper;
 import com.vaguehope.sqlitewrapper.DbException;
 
@@ -53,6 +56,8 @@ public class DbFace extends DefaultFace {
 	private final MnContext mnContext;
 	private final IMixedMediaDb db;
 	private final Player defaultPlayer;
+
+	private final AtomicReference<File> savedInitialDir = new AtomicReference<File>();
 
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -157,6 +162,9 @@ public class DbFace extends DefaultFace {
 						return true;
 					case 't':
 						showEditTagsForSelectedItem(gui);
+						return true;
+					case 'w':
+						askExportSelection(gui);
 						return true;
 					case 'o':
 						askSortColumn(gui);
@@ -293,6 +301,17 @@ public class DbFace extends DefaultFace {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
 		TagEditor.show(gui, this.db, item);
+	}
+
+	private void askExportSelection (final GUIScreen gui) {
+		this.savedInitialDir.compareAndSet(null, new File(System.getProperty("user.home")));
+		final IMixedMediaItem item = getSelectedItem();
+		if (item == null) return;
+		final File dir = DirDialog.show(gui, "Export track", this.savedInitialDir);
+		if (dir == null) return;
+		final MorriganTask task = this.mnContext.getMediaFactory().getMediaFileCopyTask(this.db, Collections.singletonList(item), dir);
+		this.mnContext.getAsyncTasksRegister().scheduleTask(task);
+		setLastActionMessage(String.format("Started copying %s ...", item));
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
