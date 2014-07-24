@@ -6,7 +6,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.gui.Action;
@@ -45,6 +47,7 @@ public class DbFace extends DefaultFace {
 			"      e\tenqueue item\n" +
 			"      E\tenqueue DB\n" +
 			"      t\ttag editor\n" +
+			"      v\tselect\n" +
 			"      w\tcopy file\n" +
 			"      d\ttoggle enabled\n" +
 			"      r\trefresh query\n" +
@@ -64,6 +67,7 @@ public class DbFace extends DefaultFace {
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
+	private final Set<IMixedMediaItem> selectedItems = new HashSet<IMixedMediaItem>();
 	private final AtomicReference<String> savedSearchTerm = new AtomicReference<String>();
 
 	private List<IMixedMediaItem> mediaItems;
@@ -165,6 +169,9 @@ public class DbFace extends DefaultFace {
 					case 't':
 						showEditTagsForSelectedItem(gui);
 						return true;
+					case 'v':
+						toggleSelection();
+						return true;
 					case 'w':
 						askExportSelection(gui);
 						return true;
@@ -231,6 +238,18 @@ public class DbFace extends DefaultFace {
 		return this.mediaItems.get(this.selectedItemIndex);
 	}
 
+	private List<IMixedMediaItem> getSelectedItems () {
+		if (this.selectedItems.size() > 0) {
+			final List<IMixedMediaItem> ret = new ArrayList<IMixedMediaItem>();
+			for (final IMixedMediaItem item : this.mediaItems) {
+				if (this.selectedItems.contains(item)) ret.add(item);
+			}
+			return ret;
+		}
+		if (this.selectedItemIndex >= 0) return Collections.singletonList(this.mediaItems.get(this.selectedItemIndex));
+		return Collections.emptyList();
+	}
+
 	private Player getPlayer (final GUIScreen gui, final String title) {
 		if (this.defaultPlayer != null) return this.defaultPlayer;
 		final Collection<Player> players = this.mnContext.getPlayerReader().getPlayers();
@@ -267,32 +286,21 @@ public class DbFace extends DefaultFace {
 		if (player != null) enqueuePlayItem(new PlayItem(this.db, null), player);
 	}
 
-	private void enqueueSelection (final GUIScreen gui) {
-		final IMixedMediaItem item = getSelectedItem();
-		if (item == null) return;
-		enqueueItem(gui, item);
-	}
-
-	private void enqueueItem (final GUIScreen gui, final IMediaTrack track) {
-		final Player player = getPlayer(gui, "Enqueue Item");
-		if (player != null) {
-			enqueuePlayItem(new PlayItem(this.db, track), player);
-			if (track.equals(getSelectedItem())) this.selectedItemIndex += 1;
-		}
-	}
-
 	protected void enqueuePlayItem (final PlayItem playItem, final Player player) {
 		player.getQueue().addToQueue(playItem);
 		// TODO protect against long item names?
 		setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
 	}
 
+	private void enqueueSelection (final GUIScreen gui) {
+		enqueueItems(gui, getSelectedItems());
+	}
+
 	private void enqueueItems (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
-		final Player player = getPlayer(gui, "Enqueue Items");
-		if (player != null) {
-			PlayerHelper.enqueueAll(this.db, tracks, player);
-			setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
-		}
+		final Player player = getPlayer(gui, String.format("Enqueue %s items", tracks.size()));
+		if (player == null) return;
+		PlayerHelper.enqueueAll(this.db, tracks, player);
+		setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
 	}
 
 	private void shuffleAndEnqueue (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
@@ -306,24 +314,29 @@ public class DbFace extends DefaultFace {
 		TagEditor.show(gui, this.db, item);
 	}
 
-	private void askExportSelection (final GUIScreen gui) {
-		this.savedInitialDir.compareAndSet(null, new File(System.getProperty("user.home")));
+	private void toggleSelection () {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
-		final File dir = DirDialog.show(gui, "Export track", "Export", this.savedInitialDir);
+		if (!this.selectedItems.remove(item)) this.selectedItems.add(item);
+	}
+
+	private void askExportSelection (final GUIScreen gui) {
+		this.savedInitialDir.compareAndSet(null, new File(System.getProperty("user.home")));
+		final List<IMixedMediaItem> items = getSelectedItems();
+		if (items.size() < 1) return;
+		final File dir = DirDialog.show(gui, String.format("Export %s tracks", items.size()), "Export", this.savedInitialDir);
 		if (dir == null) return;
-		final MorriganTask task = this.mnContext.getMediaFactory().getMediaFileCopyTask(this.db, Collections.singletonList(item), dir);
+		final MorriganTask task = this.mnContext.getMediaFactory().getMediaFileCopyTask(this.db, items, dir);
 		this.mnContext.getAsyncTasksRegister().scheduleTask(task);
-		setLastActionMessage(String.format("Started copying %s ...", item));
+		setLastActionMessage(String.format("Started copying %s tracks ...", items.size()));
 	}
 
 	private void toggleEnabledSelection () throws MorriganException {
-		final IMixedMediaItem item = getSelectedItem();
-		if (item == null) return;
-
-		final boolean target = !item.isEnabled();
-		this.db.setItemEnabled(item, target);
-		setLastActionMessage(String.format("%s: %s", target ? "Enabled" : "Disabled", item));
+		final List<IMixedMediaItem> items = getSelectedItems();
+		for (final IMixedMediaItem item : items) {
+			this.db.setItemEnabled(item, !item.isEnabled());
+		}
+		setLastActionMessage(String.format("Toggled enabled on %s items.", items.size()));
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
@@ -410,13 +423,17 @@ public class DbFace extends DefaultFace {
 			final String name = String.valueOf(item);
 			w.drawString(1, l, name, style);
 
+			final ScreenCharacterStyle[] flagStyle = this.selectedItems.contains(item) ? SELECTED : UNSELECTED;
 			if (item.isMissing()) {
-				scr.putString(0, l, "m", Color.YELLOW, Color.DEFAULT);
+				scr.putString(0, l, "m", Color.YELLOW, Color.DEFAULT, flagStyle);
 				scr.putString(name.length() + 2, l, "(missing)", Color.YELLOW, Color.DEFAULT);
 			}
 			else if (!item.isEnabled()) {
-				scr.putString(0, l, "d", Color.RED, Color.DEFAULT);
+				scr.putString(0, l, "d", Color.RED, Color.DEFAULT, flagStyle);
 				scr.putString(name.length() + 2, l, "(disabled)", Color.RED, Color.DEFAULT);
+			}
+			else if (flagStyle.length > 0) {
+				scr.putString(0, l, ">", Color.DEFAULT, Color.DEFAULT, flagStyle);
 			}
 
 			if (item.getStartCount() > 0 || item.getEndCount() > 0) {
