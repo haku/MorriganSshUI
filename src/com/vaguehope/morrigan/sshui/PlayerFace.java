@@ -38,6 +38,7 @@ public class PlayerFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
 			" <space>\tplay / pause\n" +
+			"<ctrl>+c\tstop\n" +
 			"       i\tseek\n" +
 			"       n\tnext track\n" +
 			"       o\tplayback order\n" +
@@ -157,6 +158,12 @@ public class PlayerFace extends DefaultFace {
 					case ' ':
 						this.player.pausePlaying();
 						return true;
+					case 'c':
+						if (k.isCtrlPressed()) {
+							this.player.stopPlaying();
+							return true;
+						}
+						return false;
 					case 'i':
 						SeekDialog.show(gui, this.player);
 						return true;
