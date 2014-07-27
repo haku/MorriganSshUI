@@ -41,6 +41,7 @@ public class DbFace extends DefaultFace {
 	private static final String HELP_TEXT =
 			"      g\tgo to top of list\n" +
 			"      G\tgo to end of list\n" +
+			"      z\tcentre selection\n" +
 			"      /\tsearch DB\n" +
 			"      o\tsort order\n" +
 			"      e\tenqueue item\n" +
@@ -71,7 +72,7 @@ public class DbFace extends DefaultFace {
 
 	private List<IMixedMediaItem> mediaItems;
 	private int selectedItemIndex = -1;
-	private int queueScrollTop = 0;
+	private int scrollTop = 0;
 	private int pageSize = 1;
 	private String lastActionMessage = null;
 	private long lastActionMessageTime = 0;
@@ -167,6 +168,9 @@ public class DbFace extends DefaultFace {
 					case 'G':
 						menuMoveEnd(VDirection.DOWN);
 						return true;
+					case 'z':
+						centreSelection();
+						return true;
 					case 'e':
 						enqueueSelection(gui);
 						return true;
@@ -223,6 +227,11 @@ public class DbFace extends DefaultFace {
 			default:
 		}
 		updateItemDetailsBar();
+	}
+
+	private void centreSelection () {
+		final int t = this.selectedItemIndex - (this.pageSize / 2);
+		if (t >= 0) this.scrollTop = t;
 	}
 
 	private void setSelectedItem (final int index) throws MorriganException {
@@ -416,11 +425,11 @@ public class DbFace extends DefaultFace {
 
 		this.pageSize = terminalSize.getRows() - l - 1;
 		if (this.selectedItemIndex >= 0) {
-			if (this.selectedItemIndex - this.queueScrollTop >= this.pageSize) {
-				this.queueScrollTop = this.selectedItemIndex - this.pageSize + 1;
+			if (this.selectedItemIndex - this.scrollTop >= this.pageSize) {
+				this.scrollTop = this.selectedItemIndex - this.pageSize + 1;
 			}
-			else if (this.selectedItemIndex < this.queueScrollTop) {
-				this.queueScrollTop = this.selectedItemIndex;
+			else if (this.selectedItemIndex < this.scrollTop) {
+				this.scrollTop = this.selectedItemIndex;
 			}
 		}
 
@@ -428,8 +437,8 @@ public class DbFace extends DefaultFace {
 		final int colRightPlayCount = colRightDuration - 8;
 		final int colRightLastPlayed = colRightPlayCount - 8;
 
-		for (int i = this.queueScrollTop; i < this.mediaItems.size(); i++) {
-			if (i >= this.queueScrollTop + this.pageSize) break;
+		for (int i = this.scrollTop; i < this.mediaItems.size(); i++) {
+			if (i >= this.scrollTop + this.pageSize) break;
 			final IMixedMediaItem item = this.mediaItems.get(i);
 			final ScreenCharacterStyle[] style = i == this.selectedItemIndex ? SELECTED : UNSELECTED;
 			final String name = String.valueOf(item);
@@ -469,7 +478,7 @@ public class DbFace extends DefaultFace {
 
 		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
-				PrintingThingsHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.queueScrollTop),
+				PrintingThingsHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.scrollTop),
 				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
 	}
 
