@@ -118,9 +118,17 @@ public class DbFace extends DefaultFace {
 		this.lastActionMessageTime = System.currentTimeMillis();
 	}
 
-	private void updateItemDetailsBar (final IMixedMediaItem item) throws MorriganException {
-		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
-		this.itemDetailsBar = PrintingThingsHelper.summariseItem(this.db, item, this.dateFormat);
+	private void updateItemDetailsBar () throws MorriganException {
+		if (this.selectedItems.size() > 0) {
+			this.itemDetailsBar = String.format("%s selected.", this.selectedItems.size());
+			this.itemDetailsBarItem = null;
+		}
+		else {
+			final IMixedMediaItem item = getSelectedItem();
+			if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
+			this.itemDetailsBarItem = item;
+			this.itemDetailsBar = PrintingThingsHelper.summariseItemMetadata(this.db, item, this.dateFormat);
+		}
 	}
 
 	@Override
@@ -201,7 +209,7 @@ public class DbFace extends DefaultFace {
 						: VDirection.DOWN,
 				distance,
 				this.mediaItems);
-		updateItemDetailsBar(getSelectedItem());
+		updateItemDetailsBar();
 	}
 
 	private void menuMoveEnd (final VDirection direction) throws MorriganException {
@@ -215,12 +223,12 @@ public class DbFace extends DefaultFace {
 				break;
 			default:
 		}
-		updateItemDetailsBar(getSelectedItem());
+		updateItemDetailsBar();
 	}
 
 	private void setSelectedItem (final int index) throws MorriganException {
 		this.selectedItemIndex = index;
-		updateItemDetailsBar(getSelectedItem());
+		updateItemDetailsBar();
 	}
 
 	private void revealItem (final IMediaTrack track) throws MorriganException {
@@ -314,10 +322,11 @@ public class DbFace extends DefaultFace {
 		TagEditor.show(gui, this.db, item);
 	}
 
-	private void toggleSelection () {
+	private void toggleSelection () throws MorriganException {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
 		if (!this.selectedItems.remove(item)) this.selectedItems.add(item);
+		updateItemDetailsBar();
 	}
 
 	private void askExportSelection (final GUIScreen gui) {

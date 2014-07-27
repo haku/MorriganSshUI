@@ -86,7 +86,7 @@ public final class PrintingThingsHelper {
 		return PrintingThingsHelper.join(list.getTags(item), ", ");
 	}
 
-	public static String summariseItem (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
+	public static String summariseItemMetadata (final IMediaTrackList<?> list, final IMediaTrack item, final DateFormat dateFormat) throws MorriganException {
 		return String.format("%s %s",
 				item.getDateLastPlayed() == null ? "" : dateFormat.format(item.getDateLastPlayed()),
 				PrintingThingsHelper.join(list.getTags(item), ", "));

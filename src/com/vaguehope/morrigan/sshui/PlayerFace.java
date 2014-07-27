@@ -109,6 +109,7 @@ public class PlayerFace extends DefaultFace {
 
 	private void updateSelectedItemDetailsBar () throws MorriganException {
 		if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(this.selectedItem)) return;
+		this.itemDetailsBarItem = this.selectedItem;
 		if (this.selectedItem instanceof PlayItem) {
 			final PlayItem playItem = (PlayItem) this.selectedItem;
 			final IMediaTrack item = playItem.getTrack();
