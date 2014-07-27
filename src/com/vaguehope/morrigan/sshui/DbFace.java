@@ -34,7 +34,6 @@ import com.vaguehope.morrigan.sshui.JumpToDialog.JumpResult;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.morrigan.tasks.MorriganTask;
-import com.vaguehope.morrigan.util.TimeHelper;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class DbFace extends DefaultFace {
@@ -127,7 +126,7 @@ public class DbFace extends DefaultFace {
 			final IMixedMediaItem item = getSelectedItem();
 			if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
 			this.itemDetailsBarItem = item;
-			this.itemDetailsBar = PrintingThingsHelper.summariseItemMetadata(this.db, item, this.dateFormat);
+			this.itemDetailsBar = PrintingThingsHelper.summariseItemTags(this.db, item);
 		}
 	}
 
@@ -425,6 +424,10 @@ public class DbFace extends DefaultFace {
 			}
 		}
 
+		final int colRightDuration = terminalSize.getColumns();
+		final int colRightPlayCount = colRightDuration - 8;
+		final int colRightLastPlayed = colRightPlayCount - 8;
+
 		for (int i = this.queueScrollTop; i < this.mediaItems.size(); i++) {
 			if (i >= this.queueScrollTop + this.pageSize) break;
 			final IMixedMediaItem item = this.mediaItems.get(i);
@@ -445,12 +448,22 @@ public class DbFace extends DefaultFace {
 				scr.putString(0, l, ">", Color.DEFAULT, Color.DEFAULT, flagStyle);
 			}
 
-			if (item.getStartCount() > 0 || item.getEndCount() > 0) {
-				final String counts = String.format("%s/%s", item.getStartCount(), item.getEndCount());
-				w.drawString(terminalSize.getColumns() - 10 - counts.length(), l, counts, style);
+			// Last played column.
+			if (item.getDateLastPlayed() != null) {
+				final String lastPlayed = String.format(" %s", this.dateFormat.format(item.getDateLastPlayed()));
+				w.drawString(colRightLastPlayed - lastPlayed.length(), l, lastPlayed, style);
 			}
-			final String dur = TimeHelper.formatTimeSeconds(item.getDuration());
-			w.drawString(terminalSize.getColumns() - dur.length(), l, dur, style);
+
+			// Play count column.
+			if (item.getStartCount() > 0 || item.getEndCount() > 0) {
+				final String counts = String.format("%4s/%-3s", item.getStartCount(), item.getEndCount());
+				w.drawString(colRightPlayCount - counts.length(), l, counts, style);
+			}
+
+			// Duration column.
+			final String dur = formatTimeSecondsLeftPadded(item.getDuration());
+			w.drawString(colRightDuration - dur.length(), l, dur, style);
+
 			l++;
 		}
 
@@ -458,6 +471,13 @@ public class DbFace extends DefaultFace {
 		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
 				PrintingThingsHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.queueScrollTop),
 				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+	}
+
+	private static String formatTimeSecondsLeftPadded (final long seconds) {
+		if (seconds >= 3600) {
+			return String.format(" %d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, (seconds % 60));
+		}
+		return String.format(" %4d:%02d", (seconds % 3600) / 60, (seconds % 60));
 	}
 
 	private static class SortColumnAction implements Action {
