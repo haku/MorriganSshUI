@@ -21,6 +21,7 @@ import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.model.media.MediaTagClassification;
 import com.vaguehope.morrigan.model.media.MediaTagType;
+import com.vaguehope.morrigan.sshui.util.ReflectionHelper;
 
 public class TagEditor extends Window {
 
@@ -51,6 +52,14 @@ public class TagEditor extends Window {
 			}
 		}));
 		addComponent(cancelPanel);
+
+		final Panel contentPane = (Panel) ReflectionHelper.readField(this, "contentPane");
+		contentPane.addShortcut(Key.Kind.Escape, new Action() {
+			@Override
+			public void doAction () {
+				close();
+			}
+		});
 
 		this.lstTags.reloadTags();
 	}
@@ -161,6 +170,7 @@ public class TagEditor extends Window {
 
 	public static void show (final GUIScreen owner, final IMediaTrackList<?> list, final IMediaTrack item) throws MorriganException {
 		owner.showWindow(new TagEditor(list, item), GUIScreen.Position.CENTER);
+		owner.getScreen().setCursorPosition(null);
 	}
 
 }

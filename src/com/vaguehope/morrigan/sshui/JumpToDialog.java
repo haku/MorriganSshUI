@@ -493,6 +493,7 @@ public class JumpToDialog extends Window {
 	public static JumpResult show (final GUIScreen owner, final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) {
 		final JumpToDialog dialog = new JumpToDialog(db, savedSearchTerm);
 		owner.showWindow(dialog, GUIScreen.Position.CENTER);
+		owner.getScreen().setCursorPosition(null);
 		return dialog.getResult();
 	}
 
