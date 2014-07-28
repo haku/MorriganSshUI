@@ -382,7 +382,9 @@ public class PlayerFace extends DefaultFace {
 				PrintingThingsHelper.playerStateMsg(this.player),
 				PrintingThingsHelper.listTitleAndOrder(this.player)));
 		w.drawString(1, l++, PrintingThingsHelper.playingItemTitle(this.player));
+		drawPrgBar(w, l++, terminalSize.getColumns());
 		w.drawString(1, l++, this.tagSummary);
+
 		final PlayerQueue pq = this.player.getQueue();
 		w.drawString(0, l++, PrintingThingsHelper.queueSummary(pq));
 
@@ -413,6 +415,32 @@ public class PlayerFace extends DefaultFace {
 		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
 				PrintingThingsHelper.scrollSummary(this.queue.size(), this.pageSize, this.queueScrollTop),
 				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+	}
+
+	private String lastPrgBar = null;
+	private long lastPrg = -1;
+
+	private void drawPrgBar (final ScreenWriter w, final int l, final int screenWidth) {
+		final int barWidth = screenWidth - 2;
+		final int total = this.player.getCurrentTrackDuration();
+		final long prg = total < 1 ? 0 : (long) ((this.player.getCurrentPosition() / (double) total) * barWidth);
+
+		if (prg != this.lastPrg || this.lastPrgBar == null || this.lastPrgBar.length() != barWidth) {
+			this.lastPrg = prg;
+			if (prg > 0 && barWidth > 0) {
+				final StringBuilder b = new StringBuilder(barWidth);
+				b.setLength(barWidth);
+				for (int i = 0; i < barWidth; i++) {
+					b.setCharAt(i, i < prg ? '=' : i == prg ? '>' : ' ');
+				}
+				this.lastPrgBar = b.toString();
+			}
+			else {
+				this.lastPrgBar = "";
+			}
+		}
+
+		w.drawString(1, l, this.lastPrgBar);
 	}
 
 }
