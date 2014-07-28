@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.Border.Invisible;
 import com.googlecode.lanterna.gui.GUIScreen;
+import com.googlecode.lanterna.gui.TextGraphics;
 import com.googlecode.lanterna.gui.Window;
 import com.googlecode.lanterna.gui.component.AbstractListBox;
 import com.googlecode.lanterna.gui.component.Button;
@@ -23,6 +24,7 @@ import com.googlecode.lanterna.gui.component.Panel;
 import com.googlecode.lanterna.gui.component.TextBox;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
 import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.terminal.TerminalPosition;
 import com.googlecode.lanterna.terminal.TerminalSize;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
@@ -415,6 +417,17 @@ public class JumpToDialog extends Window {
 
 		private void selectedChanged () {
 			this.dialog.requestTags((IMediaTrack) getSelectedItem());
+		}
+
+		private static final ScreenCharacterStyle[] UNSELECTED = new ScreenCharacterStyle[] {};
+		private static final ScreenCharacterStyle[] SELECTED = new ScreenCharacterStyle[] { ScreenCharacterStyle.Reverse };
+
+		@Override
+		protected void printItem (final TextGraphics graphics, final int x, final int y, final int index) {
+			final boolean selected = index == getSelectedIndex() && !hasFocus();
+			String s = createItemString(index);
+			if (s.length() > graphics.getWidth()) s = s.substring(0, graphics.getWidth());
+			graphics.drawString(x, y, s, selected ? SELECTED : UNSELECTED);
 		}
 
 	}
