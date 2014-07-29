@@ -1,5 +1,7 @@
 package com.vaguehope.morrigan.sshui.util;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -13,7 +15,7 @@ public final class Quietly {
 		try {
 			return latch.await(timeout, unit);
 		}
-		catch (InterruptedException e) {
+		catch (final InterruptedException e) {
 			return false;
 		}
 	}
@@ -22,7 +24,14 @@ public final class Quietly {
 		try {
 			Thread.sleep(millis);
 		}
-		catch (InterruptedException e) {}
+		catch (final InterruptedException e) {}
+	}
+
+	public static void close (final Closeable c) {
+		try {
+			c.close();
+		}
+		catch (final IOException e) {}
 	}
 
 }

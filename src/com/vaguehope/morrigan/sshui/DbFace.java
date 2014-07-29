@@ -1,6 +1,7 @@
 package com.vaguehope.morrigan.sshui;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -53,6 +54,9 @@ public class DbFace extends DefaultFace {
 			"      q\tback a page\n" +
 			"      h\tthis help text";
 
+	private static final String PREF_SCROLL_INDEX = "dbscroll";
+	private static final String PREF_SELECTED_INDEX = "dbselected";
+
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final IMixedMediaDb db;
@@ -73,6 +77,7 @@ public class DbFace extends DefaultFace {
 	private int pageSize = 1;
 	private String itemDetailsBar = "";
 	private IMixedMediaItem itemDetailsBarItem;
+	private boolean saveScrollOnClose = false;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer) throws MorriganException {
 		this.navigation = navigation;
@@ -83,8 +88,27 @@ public class DbFace extends DefaultFace {
 		refreshData();
 	}
 
-	public void restoreSavedScroll () {
-		// TODO.
+	public void restoreSavedScroll () throws MorriganException {
+		try {
+			this.scrollTop = this.mnContext.getUserPrefs().getIntValue(PREF_SCROLL_INDEX, this.db.getListId(), this.scrollTop);
+			this.selectedItemIndex = this.mnContext.getUserPrefs().getIntValue(PREF_SELECTED_INDEX, this.db.getListId(),
+					this.scrollTop > 0 ? this.scrollTop : this.selectedItemIndex);
+			this.saveScrollOnClose = true;
+		}
+		catch (final IOException e) {
+			throw new MorriganException("Failed to read saved scroll position.", e);
+		}
+	}
+
+	private void saveScrollIfRequired () throws MorriganException {
+		if (!this.saveScrollOnClose) return;
+		try {
+			this.mnContext.getUserPrefs().putValue(PREF_SCROLL_INDEX, this.db.getListId(), this.scrollTop);
+			this.mnContext.getUserPrefs().putValue(PREF_SELECTED_INDEX, this.db.getListId(), this.selectedItemIndex);
+		}
+		catch (final IOException e) {
+			throw new MorriganException("Failed to save scroll position.", e);
+		}
 	}
 
 	public void revealItem (final IMediaTrack track) throws MorriganException {
@@ -143,6 +167,7 @@ public class DbFace extends DefaultFace {
 			case NormalKey:
 				switch (k.getCharacter()) {
 					case 'q':
+						saveScrollIfRequired();
 						return this.navigation.backOneLevel();
 					case 'h':
 						this.navigation.startFace(new HelpFace(this.navigation, HELP_TEXT));

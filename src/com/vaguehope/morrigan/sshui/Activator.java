@@ -47,7 +47,7 @@ public class Activator implements BundleActivator {
 		this.mediaFactoryTracker = new MediaFactoryTracker(context);
 		this.asyncTasksRegisterTracker = new AsyncTasksRegisterTracker(context);
 
-		this.mnCommandFactory = new MnCommandFactory(new MnContext(this.playerReaderTracker, this.mediaFactoryTracker, this.asyncTasksRegisterTracker));
+		this.mnCommandFactory = new MnCommandFactory(new MnContext(this.playerReaderTracker, this.mediaFactoryTracker, this.asyncTasksRegisterTracker, new UserPrefs()));
 
 		this.sshd = SshServer.setUpDefaultServer();
 		this.sshd.setPort(SSHD_PORT);
