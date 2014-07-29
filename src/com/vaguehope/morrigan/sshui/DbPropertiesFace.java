@@ -17,6 +17,7 @@ import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.ILocalMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.morrigan.sshui.util.LastActionMessage;
 import com.vaguehope.morrigan.tasks.MorriganTask;
 import com.vaguehope.sqlitewrapper.DbException;
 
@@ -32,21 +33,17 @@ public class DbPropertiesFace extends DefaultFace {
 			"       q\tback a page\n" +
 			"       h\tthis help text";
 
-	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
-
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final IMixedMediaDb db;
 
+	private final LastActionMessage lastActionMessage = new LastActionMessage();
 	private final AtomicReference<File> savedInitialDir = new AtomicReference<File>();
 
 	private List<String> sources;
 	private Object selectedItem;
 	private int queueScrollTop = 0;
 	private int pageSize = 1;
-	private String lastActionMessage = null;
-	private long lastActionMessageTime = 0;
-
 
 	public DbPropertiesFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db) throws MorriganException {
 		this.navigation = navigation;
@@ -58,11 +55,6 @@ public class DbPropertiesFace extends DefaultFace {
 
 	private void refreshData () throws MorriganException {
 		this.sources = this.db.getSources();
-	}
-
-	protected void setLastActionMessage (final String lastActionMessage) {
-		this.lastActionMessage = lastActionMessage;
-		this.lastActionMessageTime = System.currentTimeMillis();
 	}
 
 	@Override
@@ -166,14 +158,14 @@ public class DbPropertiesFace extends DefaultFace {
 			final MorriganTask task = this.mnContext.getMediaFactory().getLocalMixedMediaDbUpdateTask((ILocalMixedMediaDb) this.db);
 			if (task != null) {
 				this.mnContext.getAsyncTasksRegister().scheduleTask(task);
-				setLastActionMessage("Update started.");
+				this.lastActionMessage.setLastActionMessage("Update started.");
 			}
 			else {
-				setLastActionMessage("Unable to start update, one may already be in progress.");
+				this.lastActionMessage.setLastActionMessage("Unable to start update, one may already be in progress.");
 			}
 		}
 		else {
-			setLastActionMessage("Do not know how to refresh: " + this.db);
+			this.lastActionMessage.setLastActionMessage("Do not know how to refresh: " + this.db);
 		}
 	}
 
@@ -190,16 +182,7 @@ public class DbPropertiesFace extends DefaultFace {
 	private void writeDbPropsToScreen (final Screen scr, final ScreenWriter w) {
 		int l = 0;
 		w.drawString(0, l++, String.format("DB %s:", this.db.getListName()));
-
-		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
-			this.lastActionMessage = null;
-		}
-		if (this.lastActionMessage != null && this.lastActionMessage.length() > 0) {
-			w.drawString(0, l++, String.format(">> %s", this.lastActionMessage));
-		}
-		else {
-			l++;
-		}
+		this.lastActionMessage.drawLastActionMessage(w, l++);
 
 		this.pageSize = scr.getTerminalSize().getRows() - l;
 		final int selI = this.sources.indexOf(this.selectedItem);

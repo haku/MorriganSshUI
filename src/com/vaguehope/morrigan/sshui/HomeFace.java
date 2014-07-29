@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.gui.GUIScreen;
 import com.googlecode.lanterna.gui.dialog.MessageBox;
@@ -15,9 +16,12 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
+import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaListReference;
+import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.morrigan.sshui.util.LastActionMessage;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class HomeFace extends DefaultFace {
@@ -27,6 +31,8 @@ public class HomeFace extends DefaultFace {
 			"      G\tgo to end of list\n" +
 			"<space>\tplay / pause selected player\n" +
 			"      n\tcreate new DB\n" +
+			"      e\tenqueue DB\n" +
+			"      /\tsearch DB\n" +
 			"      q\tback a page\n" +
 			"      h\tthis help text";
 
@@ -34,6 +40,10 @@ public class HomeFace extends DefaultFace {
 
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
+	private final DbHelper dbHelper;
+
+	private final LastActionMessage lastActionMessage = new LastActionMessage();
+	private final AtomicReference<String> savedSearchTerm = new AtomicReference<String>();
 
 	private long lastDataRefresh = 0;
 	private List<Player> players;
@@ -44,6 +54,7 @@ public class HomeFace extends DefaultFace {
 	public HomeFace (final FaceNavigation actions, final MnContext mnContext) {
 		this.navigation = actions;
 		this.mnContext = mnContext;
+		this.dbHelper = new DbHelper(this.navigation, mnContext, null, this.lastActionMessage);
 	}
 
 	private void refreshData () {
@@ -99,6 +110,12 @@ public class HomeFace extends DefaultFace {
 						return true;
 					case 'n':
 						askNewDb(gui);
+						return true;
+					case 'e':
+						enqueueDb(gui);
+						return true;
+					case '/':
+						askSearch(gui);
 						return true;
 					default:
 				}
@@ -161,6 +178,33 @@ public class HomeFace extends DefaultFace {
 		}
 	}
 
+	private void enqueueDb (final GUIScreen gui) throws DbException, MorriganException {
+		if (this.selectedItem instanceof MediaListReference) {
+			final Player player = getPlayer(gui, "Enqueue DB");
+			if (player != null) {
+				final IMixedMediaDb db = this.dbHelper.resolveReference((MediaListReference) this.selectedItem);
+				enqueuePlayItem(new PlayItem(db, null), player);
+			}
+		}
+	}
+
+	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+		if (this.selectedItem instanceof MediaListReference) {
+			final IMixedMediaDb db = this.dbHelper.resolveReference((MediaListReference) this.selectedItem);
+			this.dbHelper.askSearch(gui, db, this.savedSearchTerm);
+		}
+	}
+
+	private Player getPlayer (final GUIScreen gui, final String title) {
+		return PlayerHelper.askWhichPlayer(gui, title, null, this.mnContext.getPlayerReader().getPlayers());
+	}
+
+	protected void enqueuePlayItem (final PlayItem playItem, final Player player) {
+		player.getQueue().addToQueue(playItem);
+		// TODO protect against long item names?
+		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
+	}
+
 	@Override
 	public void writeScreen (final Screen scr, final ScreenWriter w) {
 		refreshStaleData();
@@ -168,7 +212,8 @@ public class HomeFace extends DefaultFace {
 		int l = 0;
 		w.drawString(0, l++, "Players");
 		l = printPlayers(w, l);
-		l++;
+
+		this.lastActionMessage.drawLastActionMessage(w, l++);
 
 		if (MenuHelper.sizeOf(this.tasks) > 0) {
 			w.drawString(0, l++, "Background Tasks");

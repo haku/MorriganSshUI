@@ -4,7 +4,6 @@ import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +29,8 @@ import com.vaguehope.morrigan.model.media.IMixedMediaItem;
 import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
-import com.vaguehope.morrigan.sshui.JumpToDialog.JumpResult;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
+import com.vaguehope.morrigan.sshui.util.LastActionMessage;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.morrigan.tasks.MorriganTask;
 import com.vaguehope.sqlitewrapper.DbException;
@@ -55,18 +54,17 @@ public class DbFace extends DefaultFace {
 			"      q\tback a page\n" +
 			"      h\tthis help text";
 
-	private static final long LAST_ACTION_MESSAGE_DURATION_MILLIS = 5000L;
-
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final IMixedMediaDb db;
 	private final Player defaultPlayer;
-
-	private final AtomicReference<File> savedInitialDir = new AtomicReference<File>();
+	private final DbHelper dbHelper;
 
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
+	private final LastActionMessage lastActionMessage = new LastActionMessage();
+	private final AtomicReference<File> savedInitialDir = new AtomicReference<File>();
 	private final Set<IMixedMediaItem> selectedItems = new HashSet<IMixedMediaItem>();
 	private final AtomicReference<String> savedSearchTerm = new AtomicReference<String>();
 
@@ -74,25 +72,16 @@ public class DbFace extends DefaultFace {
 	private int selectedItemIndex = -1;
 	private int scrollTop = 0;
 	private int pageSize = 1;
-	private String lastActionMessage = null;
-	private long lastActionMessageTime = 0;
 	private String itemDetailsBar = "";
 	private IMixedMediaItem itemDetailsBarItem;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
-
-		if (listReference.getType() == MediaListReference.MediaListType.LOCALMMDB) {
-			this.db = mnContext.getMediaFactory().getLocalMixedMediaDb(listReference.getIdentifier());
-			this.db.read();
-			refreshData();
-		}
-		else {
-			this.db = null;
-		}
-
 		this.defaultPlayer = null;
+		this.dbHelper = new DbHelper(navigation, mnContext, this.defaultPlayer, this.lastActionMessage);
+		this.db = this.dbHelper.resolveReference(listReference);
+		refreshData();
 	}
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer) throws MorriganException {
@@ -100,6 +89,7 @@ public class DbFace extends DefaultFace {
 		this.mnContext = mnContext;
 		this.db = db;
 		this.defaultPlayer = defaultPlayer;
+		this.dbHelper = new DbHelper(navigation, mnContext, this.defaultPlayer, this.lastActionMessage);
 		refreshData();
 	}
 
@@ -109,13 +99,9 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void refreshData () throws MorriganException {
+		if (this.db == null) return;
 		this.db.read();
 		this.mediaItems = this.db.getMediaItems();
-	}
-
-	protected void setLastActionMessage (final String lastActionMessage) {
-		this.lastActionMessage = lastActionMessage;
-		this.lastActionMessageTime = System.currentTimeMillis();
 	}
 
 	private void updateItemDetailsBar () throws MorriganException {
@@ -245,7 +231,7 @@ public class DbFace extends DefaultFace {
 			setSelectedItem(i);
 		}
 		else {
-			setLastActionMessage("Item not in view: " + track); // TODO open new DbFace here?
+			this.lastActionMessage.setLastActionMessage("Item not in view: " + track); // TODO open new DbFace here?
 		}
 	}
 
@@ -267,34 +253,7 @@ public class DbFace extends DefaultFace {
 	}
 
 	private Player getPlayer (final GUIScreen gui, final String title) {
-		if (this.defaultPlayer != null) return this.defaultPlayer;
-		final Collection<Player> players = this.mnContext.getPlayerReader().getPlayers();
-		if (players == null || players.size() < 1) {
-			return null;
-		}
-		else if (players.size() == 1) {
-			return players.iterator().next();
-		}
-		else {
-			final AtomicReference<Player> ret = new AtomicReference<Player>();
-			final List<Action> actions = new ArrayList<Action>();
-			for (final Player player : players) {
-				actions.add(new Action() {
-					@Override
-					public String toString () {
-						return player.getName();
-					}
-
-					@Override
-					public void doAction () {
-						ret.set(player);
-					}
-				});
-			}
-			ActionListDialog.showActionListDialog(gui, title, "Select player",
-					actions.toArray(new Action[actions.size()]));
-			return ret.get();
-		}
+		return PlayerHelper.askWhichPlayer(gui, title, this.defaultPlayer, this.mnContext.getPlayerReader().getPlayers());
 	}
 
 	private void enqueueDb (final GUIScreen gui) {
@@ -305,7 +264,7 @@ public class DbFace extends DefaultFace {
 	protected void enqueuePlayItem (final PlayItem playItem, final Player player) {
 		player.getQueue().addToQueue(playItem);
 		// TODO protect against long item names?
-		setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
+		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
 	}
 
 	private void enqueueSelection (final GUIScreen gui) {
@@ -316,12 +275,7 @@ public class DbFace extends DefaultFace {
 		final Player player = getPlayer(gui, String.format("Enqueue %s items", tracks.size()));
 		if (player == null) return;
 		PlayerHelper.enqueueAll(this.db, tracks, player);
-		setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
-	}
-
-	private void shuffleAndEnqueue (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
-		final Player player = getPlayer(gui, "Shuffle and enqueue");
-		if (player != null) PlayerHelper.shuffleAndEnqueue(this.db, tracks, player);
+		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
 	}
 
 	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
@@ -345,7 +299,7 @@ public class DbFace extends DefaultFace {
 		if (dir == null) return;
 		final MorriganTask task = this.mnContext.getMediaFactory().getMediaFileCopyTask(this.db, items, dir);
 		this.mnContext.getAsyncTasksRegister().scheduleTask(task);
-		setLastActionMessage(String.format("Started copying %s tracks ...", items.size()));
+		this.lastActionMessage.setLastActionMessage(String.format("Started copying %s tracks ...", items.size()));
 	}
 
 	private void toggleEnabledSelection () throws MorriganException {
@@ -353,7 +307,7 @@ public class DbFace extends DefaultFace {
 		for (final IMixedMediaItem item : items) {
 			this.db.setItemEnabled(item, !item.isEnabled());
 		}
-		setLastActionMessage(String.format("Toggled enabled on %s items.", items.size()));
+		this.lastActionMessage.setLastActionMessage(String.format("Toggled enabled on %s items.", items.size()));
 	}
 
 	private void askSortColumn (final GUIScreen gui) {
@@ -370,25 +324,7 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
-		final JumpResult res = JumpToDialog.show(gui, this.db, this.savedSearchTerm);
-		if (res == null) return;
-		switch (res.getType()) {
-			case ENQUEUE:
-				enqueueItems(gui, res.getTracks());
-				break;
-			case REVEAL:
-				revealItem(res.getTrack());
-				break;
-			case SHUFFLE_AND_ENQUEUE:
-				shuffleAndEnqueue(gui, res.getTracks());
-				break;
-			case OPEN_VIEW:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext,
-						this.mnContext.getMediaFactory().getLocalMixedMediaDb(this.db.getDbPath(), res.getText()),
-						this.defaultPlayer));
-				break;
-			default:
-		}
+		this.dbHelper.askSearch(gui, this.db, this.savedSearchTerm);
 	}
 
 	@Override
@@ -412,16 +348,7 @@ public class DbFace extends DefaultFace {
 				this.db.getListName(),
 				PrintingThingsHelper.dbSummary(this.db),
 				PrintingThingsHelper.sortSummary(this.db)));
-
-		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
-			this.lastActionMessage = null;
-		}
-		if (this.lastActionMessage != null && this.lastActionMessage.length() > 0) {
-			w.drawString(0, l++, String.format(">> %s", this.lastActionMessage));
-		}
-		else {
-			l++;
-		}
+		this.lastActionMessage.drawLastActionMessage(w, l++);
 
 		this.pageSize = terminalSize.getRows() - l - 1;
 		if (this.selectedItemIndex >= 0) {

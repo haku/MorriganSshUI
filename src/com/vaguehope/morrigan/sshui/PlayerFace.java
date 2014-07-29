@@ -28,7 +28,6 @@ import com.vaguehope.morrigan.player.OrderHelper.PlaybackOrder;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
-import com.vaguehope.morrigan.sshui.JumpToDialog.JumpResult;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
 import com.vaguehope.morrigan.util.TimeHelper;
@@ -62,6 +61,7 @@ public class PlayerFace extends DefaultFace {
 	private final FaceNavigation navigation;
 	private final MnContext mnContext;
 	private final Player player;
+	private final DbHelper dbHelper;
 
 	private final TextGuiUtils textGuiUtils = new TextGuiUtils();
 	private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -82,6 +82,7 @@ public class PlayerFace extends DefaultFace {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.player = player;
+		this.dbHelper = new DbHelper(navigation, mnContext, player, null);
 	}
 
 	private void invalidateData () {
@@ -250,25 +251,7 @@ public class PlayerFace extends DefaultFace {
 	}
 
 	private void askJumpTo (final GUIScreen gui, final IMixedMediaDb db) throws DbException, MorriganException {
-		final JumpResult res = JumpToDialog.show(gui, db, this.savedSearchTerm);
-		if (res == null) return;
-		switch (res.getType()) {
-			case ENQUEUE:
-				PlayerHelper.enqueueAll(db, res.getTracks(), this.player);
-				break;
-			case REVEAL:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, db, this.player, res.getTrack()));
-				break;
-			case SHUFFLE_AND_ENQUEUE:
-				PlayerHelper.shuffleAndEnqueue(db, res.getTracks(), this.player);
-				break;
-			case OPEN_VIEW:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext,
-						this.mnContext.getMediaFactory().getLocalMixedMediaDb(db.getDbPath(), res.getText()),
-						this.player));
-				break;
-			default:
-		}
+		this.dbHelper.askSearch(gui, db, this.savedSearchTerm);
 	}
 
 	private void showEditTagsForPlayingItem (final GUIScreen gui) throws MorriganException {
