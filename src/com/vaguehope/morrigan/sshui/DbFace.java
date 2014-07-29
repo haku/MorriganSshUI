@@ -84,7 +84,7 @@ public class DbFace extends DefaultFace {
 		this.mnContext = mnContext;
 		this.db = db;
 		this.defaultPlayer = defaultPlayer;
-		this.dbHelper = new DbHelper(navigation, mnContext, this.defaultPlayer, this.lastActionMessage);
+		this.dbHelper = new DbHelper(navigation, mnContext, this.defaultPlayer, this.lastActionMessage, this);
 		refreshData();
 	}
 

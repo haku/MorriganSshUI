@@ -82,7 +82,7 @@ public class PlayerFace extends DefaultFace {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.player = player;
-		this.dbHelper = new DbHelper(navigation, mnContext, player, null);
+		this.dbHelper = new DbHelper(navigation, mnContext, player, null, null);
 	}
 
 	private void invalidateData () {

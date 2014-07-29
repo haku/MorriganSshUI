@@ -54,7 +54,7 @@ public class HomeFace extends DefaultFace {
 	public HomeFace (final FaceNavigation actions, final MnContext mnContext) {
 		this.navigation = actions;
 		this.mnContext = mnContext;
-		this.dbHelper = new DbHelper(this.navigation, mnContext, null, this.lastActionMessage);
+		this.dbHelper = new DbHelper(this.navigation, mnContext, null, this.lastActionMessage, null);
 	}
 
 	private void refreshData () {

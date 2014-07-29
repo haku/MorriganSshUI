@@ -22,12 +22,14 @@ public class DbHelper {
 	private final MnContext mnContext;
 	private final Player defaultPlayer;
 	private final LastActionMessage lastActionMessage;
+	private final DbFace defaultDbFace;
 
-	public DbHelper (final FaceNavigation navigation, final MnContext mnContext, final Player defaultPlayer, final LastActionMessage lastActionMessage) {
+	public DbHelper (final FaceNavigation navigation, final MnContext mnContext, final Player defaultPlayer, final LastActionMessage lastActionMessage, final DbFace defaultDbFace) {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.defaultPlayer = defaultPlayer;
 		this.lastActionMessage = lastActionMessage;
+		this.defaultDbFace = defaultDbFace;
 	}
 
 	public IMixedMediaDb resolveReference (final MediaListReference ref) throws DbException, MorriganException {
@@ -70,9 +72,14 @@ public class DbHelper {
 	}
 
 	private void revealItem (final IMixedMediaDb db, final IMediaTrack track) throws MorriganException {
-		final DbFace dbFace = new DbFace(this.navigation, this.mnContext, db, this.defaultPlayer);
-		dbFace.revealItem(track);
-		this.navigation.startFace(dbFace);
+		if (this.defaultDbFace != null) {
+			this.defaultDbFace.revealItem(track);
+		}
+		else {
+			final DbFace dbFace = new DbFace(this.navigation, this.mnContext, db, this.defaultPlayer);
+			dbFace.revealItem(track);
+			this.navigation.startFace(dbFace);
+		}
 	}
 
 	private void shuffleAndEnqueue (final GUIScreen gui, final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks) {
