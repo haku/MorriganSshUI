@@ -163,7 +163,10 @@ public class HomeFace extends DefaultFace {
 			this.navigation.startFace(new PlayerFace(this.navigation, this.mnContext, (Player) this.selectedItem));
 		}
 		else if (this.selectedItem instanceof MediaListReference) {
-			this.navigation.startFace(new DbFace(this.navigation, this.mnContext, (MediaListReference) this.selectedItem));
+			final IMixedMediaDb db = this.dbHelper.resolveReference((MediaListReference) this.selectedItem);
+			final DbFace dbFace = new DbFace(this.navigation, this.mnContext, db, null);
+			dbFace.restoreSavedScroll();
+			this.navigation.startFace(dbFace);
 		}
 		else {
 			MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItem);

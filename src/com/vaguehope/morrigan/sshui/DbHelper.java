@@ -50,15 +50,13 @@ public class DbHelper {
 				enqueueItems(gui, db, res.getTracks());
 				break;
 			case REVEAL:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext, db, null, res.getTrack()));
+				revealItem(db, res.getTrack());
 				break;
 			case SHUFFLE_AND_ENQUEUE:
 				shuffleAndEnqueue(gui, db, res.getTracks());
 				break;
 			case OPEN_VIEW:
-				this.navigation.startFace(new DbFace(this.navigation, this.mnContext,
-						this.mnContext.getMediaFactory().getLocalMixedMediaDb(db.getDbPath(), res.getText()),
-						null));
+				openFilter(db, res.getText());
 				break;
 			default:
 		}
@@ -71,9 +69,21 @@ public class DbHelper {
 		if (this.lastActionMessage != null) this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
 	}
 
+	private void revealItem (final IMixedMediaDb db, final IMediaTrack track) throws MorriganException {
+		final DbFace dbFace = new DbFace(this.navigation, this.mnContext, db, this.defaultPlayer);
+		dbFace.revealItem(track);
+		this.navigation.startFace(dbFace);
+	}
+
 	private void shuffleAndEnqueue (final GUIScreen gui, final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks) {
 		final Player player = getPlayer(gui, "Shuffle and enqueue");
 		if (player != null) PlayerHelper.shuffleAndEnqueue(db, tracks, player);
+	}
+
+	private void openFilter (final IMixedMediaDb db, final String searchTerm) throws MorriganException, DbException {
+		this.navigation.startFace(new DbFace(this.navigation, this.mnContext,
+				this.mnContext.getMediaFactory().getLocalMixedMediaDb(db.getDbPath(), searchTerm),
+				this.defaultPlayer));
 	}
 
 	private Player getPlayer (final GUIScreen gui, final String title) {

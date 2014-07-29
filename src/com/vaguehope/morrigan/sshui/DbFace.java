@@ -26,7 +26,6 @@ import com.vaguehope.morrigan.model.media.IMediaItemStorageLayer.SortDirection;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMixedMediaItem;
-import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
@@ -75,15 +74,6 @@ public class DbFace extends DefaultFace {
 	private String itemDetailsBar = "";
 	private IMixedMediaItem itemDetailsBarItem;
 
-	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final MediaListReference listReference) throws DbException, MorriganException {
-		this.navigation = navigation;
-		this.mnContext = mnContext;
-		this.defaultPlayer = null;
-		this.dbHelper = new DbHelper(navigation, mnContext, this.defaultPlayer, this.lastActionMessage);
-		this.db = this.dbHelper.resolveReference(listReference);
-		refreshData();
-	}
-
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer) throws MorriganException {
 		this.navigation = navigation;
 		this.mnContext = mnContext;
@@ -93,9 +83,18 @@ public class DbFace extends DefaultFace {
 		refreshData();
 	}
 
-	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer, final IMediaTrack revealItem) throws MorriganException {
-		this(navigation, mnContext, db, defaultPlayer);
-		revealItem(revealItem);
+	public void restoreSavedScroll () {
+		// TODO.
+	}
+
+	public void revealItem (final IMediaTrack track) throws MorriganException {
+		final int i = this.mediaItems.indexOf(track);
+		if (i >= 0) {
+			setSelectedItem(i);
+		}
+		else {
+			this.lastActionMessage.setLastActionMessage("Item not in view: " + track); // TODO open new DbFace here?
+		}
 	}
 
 	private void refreshData () throws MorriganException {
@@ -223,16 +222,6 @@ public class DbFace extends DefaultFace {
 	private void setSelectedItem (final int index) throws MorriganException {
 		this.selectedItemIndex = index;
 		updateItemDetailsBar();
-	}
-
-	private void revealItem (final IMediaTrack track) throws MorriganException {
-		final int i = this.mediaItems.indexOf(track);
-		if (i >= 0) {
-			setSelectedItem(i);
-		}
-		else {
-			this.lastActionMessage.setLastActionMessage("Item not in view: " + track); // TODO open new DbFace here?
-		}
 	}
 
 	private IMixedMediaItem getSelectedItem () {
