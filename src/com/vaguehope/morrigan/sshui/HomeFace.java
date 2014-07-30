@@ -16,6 +16,8 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
+import com.vaguehope.morrigan.model.media.IMediaTrack;
+import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaListReference;
 import com.vaguehope.morrigan.player.PlayItem;
@@ -191,7 +193,13 @@ public class HomeFace extends DefaultFace {
 	}
 
 	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
-		if (this.selectedItem instanceof MediaListReference) {
+		if (this.selectedItem instanceof Player) {
+			final IMediaTrackList<? extends IMediaTrack> list = ((Player) this.selectedItem).getCurrentList();
+			if (list != null && list instanceof IMixedMediaDb) {
+				this.dbHelper.askSearch(gui, (IMixedMediaDb) list, this.savedSearchTerm);
+			}
+		}
+		else if (this.selectedItem instanceof MediaListReference) {
 			final IMixedMediaDb db = this.dbHelper.resolveReference((MediaListReference) this.selectedItem);
 			this.dbHelper.askSearch(gui, db, this.savedSearchTerm);
 		}
