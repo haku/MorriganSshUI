@@ -45,6 +45,7 @@ public class DbFace extends DefaultFace {
 			"      o\tsort order\n" +
 			"      e\tenqueue item\n" +
 			"      E\tenqueue DB\n" +
+			"<enter>\tplay item\n" +
 			"      t\ttag editor\n" +
 			"      v\tselect\n" +
 			"      w\tcopy file\n" +
@@ -163,6 +164,9 @@ public class DbFace extends DefaultFace {
 				return true;
 			case F6:
 				this.navigation.startFace(new DbPropertiesFace(this.navigation, this.mnContext, this.db));
+				return true;
+			case Enter:
+				playSelection(gui);
 				return true;
 			case NormalKey:
 				switch (k.getCharacter()) {
@@ -286,10 +290,23 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void enqueueItems (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
+		if (tracks.size() < 1) return;
 		final Player player = getPlayer(gui, String.format("Enqueue %s items", tracks.size()));
 		if (player == null) return;
 		PlayerHelper.enqueueAll(this.db, tracks, player);
 		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
+	}
+
+	private void playSelection (final GUIScreen gui) {
+		playItems(gui, getSelectedItems());
+	}
+
+	private void playItems (final GUIScreen gui, final List<IMixedMediaItem> tracks) {
+		if (tracks.size() < 1) return;
+		final Player player = getPlayer(gui, String.format("Play %s items", tracks.size()));
+		if (player == null) return;
+		this.lastActionMessage.setLastActionMessage(String.format("Playing in %s.", tracks.size(), player.getName()));
+		PlayerHelper.playAll(this.db, tracks, player);
 	}
 
 	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {

@@ -27,6 +27,16 @@ public final class PlayerHelper {
 		enqueueAll(db, shuffeledList, player);
 	}
 
+	public static void playAll (final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks, final Player player) {
+		final List<PlayItem> items = new ArrayList<PlayItem>();
+		for (final IMediaTrack track : tracks) {
+			items.add(new PlayItem(db, track));
+		}
+		player.getQueue().addToQueue(items);
+		player.getQueue().moveInQueueEnd(items, false);
+		player.nextTrack();
+	}
+
 	public static void enqueueAll (final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks, final Player player) {
 		final PlayerQueue queue = player.getQueue();
 		for (final IMediaTrack track : tracks) {

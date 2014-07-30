@@ -29,7 +29,7 @@ public class HomeFace extends DefaultFace {
 	private static final String HELP_TEXT =
 			"      g\tgo to top of list\n" +
 			"      G\tgo to end of list\n" +
-			"<space>\tplay / pause selected player\n" +
+			"<space>\tplay / pause selected player or play DB\n" +
 			"      n\tcreate new DB\n" +
 			"      e\tenqueue DB\n" +
 			"      /\tsearch DB\n" +
@@ -73,11 +73,6 @@ public class HomeFace extends DefaultFace {
 
 	@Override
 	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
-
-		// TODO
-		// - New DB.
-		// - Scrolling.
-
 		switch (k.getKind()) {
 			case ArrowUp:
 			case ArrowDown:
@@ -144,13 +139,17 @@ public class HomeFace extends DefaultFace {
 		}
 	}
 
-	private void menuClick (final GUIScreen gui) {
+	private void menuClick (final GUIScreen gui) throws DbException, MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof Player) {
 			((Player) this.selectedItem).pausePlaying();
 		}
 		else if (this.selectedItem instanceof MediaListReference) {
-//			MessageBox.showMessageBox(gui, "TODO", "Clicked: " + this.selectedItem);
+			final Player player = getPlayer(gui, "Play DB");
+			if (player != null) {
+				final IMixedMediaDb db = this.dbHelper.resolveReference((MediaListReference) this.selectedItem);
+				playPlayItem(new PlayItem(db, null), player);
+			}
 		}
 		else {
 			MessageBox.showMessageBox(gui, "Error", "Unknown type: " + this.selectedItem);
@@ -206,6 +205,12 @@ public class HomeFace extends DefaultFace {
 		player.getQueue().addToQueue(playItem);
 		// TODO protect against long item names?
 		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
+	}
+
+	protected void playPlayItem (final PlayItem playItem, final Player player) {
+		player.loadAndStartPlaying(playItem);
+		// TODO protect against long item names?
+		this.lastActionMessage.setLastActionMessage(String.format("Playing %s in %s.", playItem, player.getName()));
 	}
 
 	@Override
