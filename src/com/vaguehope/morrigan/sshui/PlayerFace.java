@@ -59,7 +59,6 @@ public class PlayerFace extends DefaultFace {
 	private static final long DATA_REFRESH_MILLIS = 500L;
 
 	private final FaceNavigation navigation;
-	private final MnContext mnContext;
 	private final Player player;
 	private final DbHelper dbHelper;
 
@@ -80,7 +79,6 @@ public class PlayerFace extends DefaultFace {
 
 	public PlayerFace (final FaceNavigation navigation, final MnContext mnContext, final Player player) {
 		this.navigation = navigation;
-		this.mnContext = mnContext;
 		this.player = player;
 		this.dbHelper = new DbHelper(navigation, mnContext, player, null, null);
 	}

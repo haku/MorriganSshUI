@@ -65,7 +65,7 @@ public class MnCommandFactory implements Factory<Command> {
 
 		@Override
 		public Thread newThread (final Runnable r) {
-			Thread t = new Thread(this.threadGroup, r, this.namePrefix + this.counter.getAndIncrement());
+			final Thread t = new Thread(this.threadGroup, r, this.namePrefix + this.counter.getAndIncrement());
 			t.setDaemon(true);
 			t.setPriority(Thread.NORM_PRIORITY);
 			return t;

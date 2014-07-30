@@ -82,7 +82,7 @@ public abstract class SshScreen implements Runnable {
 				Quietly.sleep(10); // FIXME I wish terminal.readInput() used blocking-with-timeout IO.
 			}
 		}
-		catch (final Throwable t) {
+		catch (final Throwable t) { // NOSONAR Report all errors and clean up session.
 			LOG.error("Session error.", t);
 			scheduleQuit("session error");
 		}

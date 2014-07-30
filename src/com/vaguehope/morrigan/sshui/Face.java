@@ -31,6 +31,6 @@ public interface Face {
 	/**
 	 * Called when face closed with backOneLevelWithResult();
 	 */
-	void onFaceResult (Object result) throws Exception;
+	void onFaceResult (Object result) throws Exception; // NOSONAR throws Exception is part of API.
 
 }

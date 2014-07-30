@@ -12,7 +12,7 @@ public class TextGuiUtils {
 	private String cachedBlankRow = null;
 
 	public void drawTextRowWithBg (final Screen scr, final int top, final String s, final Color fg, final Color bg, final ScreenCharacterStyle... style) {
-		TerminalSize terminalSize = scr.getTerminalSize();
+		final TerminalSize terminalSize = scr.getTerminalSize();
 		fillRow(scr, terminalSize.getColumns(), top, Color.BLUE);
 		scr.putString(0, terminalSize.getRows() - 1, s, fg, bg, style);
 	}

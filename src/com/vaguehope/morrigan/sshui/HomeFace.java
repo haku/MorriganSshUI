@@ -195,7 +195,7 @@ public class HomeFace extends DefaultFace {
 	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
 		if (this.selectedItem instanceof Player) {
 			final IMediaTrackList<? extends IMediaTrack> list = ((Player) this.selectedItem).getCurrentList();
-			if (list != null && list instanceof IMixedMediaDb) {
+			if (list instanceof IMixedMediaDb) {
 				this.dbHelper.askSearch(gui, (IMixedMediaDb) list, this.savedSearchTerm);
 			}
 		}

@@ -305,7 +305,7 @@ public class DbFace extends DefaultFace {
 		if (tracks.size() < 1) return;
 		final Player player = getPlayer(gui, String.format("Play %s items", tracks.size()));
 		if (player == null) return;
-		this.lastActionMessage.setLastActionMessage(String.format("Playing in %s.", tracks.size(), player.getName()));
+		this.lastActionMessage.setLastActionMessage(String.format("Playing %s items in %s.", tracks.size(), player.getName()));
 		PlayerHelper.playAll(this.db, tracks, player);
 	}
 

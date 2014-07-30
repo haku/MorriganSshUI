@@ -143,7 +143,7 @@ public class JumpToDialog extends Window {
 	/**
 	 * Only call on UI thread.
 	 */
-	protected void requestSearch () {
+	protected final void requestSearch () {
 		if (this.searchRunner == null) {
 			this.searchRunner = new SearchRunner(this);
 			final Thread t = new Thread(this.searchRunner, String.format("jtbg-%s", BG_THREAD_NUMBER.getAndIncrement()));
