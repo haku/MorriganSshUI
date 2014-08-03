@@ -286,7 +286,9 @@ public class DbFace extends DefaultFace {
 	}
 
 	private void enqueueSelection (final GUIScreen gui) {
-		enqueueItems(gui, getSelectedItems());
+		final List<IMixedMediaItem> items = getSelectedItems();
+		enqueueItems(gui, items);
+		if (items.size() == 1 && items.contains(getSelectedItem())) this.selectedItemIndex += 1;
 	}
 
 	private void enqueueItems (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
