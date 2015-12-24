@@ -18,7 +18,7 @@ import com.vaguehope.morrigan.sshui.util.Quietly;
 public abstract class SshScreen implements Runnable {
 
 	private static final long PRINT_CYCLE_NANOS = TimeUnit.MILLISECONDS.toNanos(500L);
-	private static final long WIPE_CYCLE_NANOS = TimeUnit.SECONDS.toNanos(5L);
+	private static final long WIPE_CYCLE_NANOS = TimeUnit.SECONDS.toNanos(3L);
 	private static final long SHUTDOWN_TIMEOUT_MILLIS = TimeUnit.SECONDS.toNanos(5L);
 
 	private static final Logger LOG = LoggerFactory.getLogger(SshScreen.class);
