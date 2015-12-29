@@ -357,7 +357,7 @@ public class PlayerFace extends DefaultFace {
 		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
 
-		w.drawString(0, l++, String.format("Player %s: %s   %s   %s.",
+		w.drawString(0, l++, String.format("Player %1.5s: %s   %s   %s.",
 				this.player.getId(),
 				this.player.getName(),
 				PrintingThingsHelper.playerStateMsg(this.player),
