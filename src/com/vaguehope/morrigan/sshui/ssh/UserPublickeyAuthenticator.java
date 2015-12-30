@@ -8,6 +8,7 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
@@ -36,12 +37,23 @@ public class UserPublickeyAuthenticator implements PublickeyAuthenticator {
 		return this.currentUserName.equals(username) && this.publicKeys.contains(key);
 	}
 
+	private static Set<PublicKey> parseAuthorizedKeysFile () throws FileNotFoundException, GeneralSecurityException {
+		final File mnFile = new File(new File(new File(System.getProperty("user.home")), ".morrigan"), "authorized_keys");
+		final File sshFile = new File(new File(new File(System.getProperty("user.home")), ".ssh"), "authorized_keys");
+		if (mnFile.exists()) {
+			return parseAuthorizedKeysFile(mnFile);
+		}
+		else if (sshFile.exists()) {
+			return parseAuthorizedKeysFile(sshFile);
+		}
+		return Collections.emptySet();
+	}
+
 	// From https://stackoverflow.com/questions/3531506/using-public-key-from-authorized-keys-with-java-security .
 
-	private static Set<PublicKey> parseAuthorizedKeysFile () throws FileNotFoundException, GeneralSecurityException {
-		final File authKeysFile = new File(new File(new File(System.getProperty("user.home")), ".ssh"), "authorized_keys");
+	private static Set<PublicKey> parseAuthorizedKeysFile (final File file) throws FileNotFoundException, GeneralSecurityException {
 		final AuthorizedKeysDecoder decoder = new AuthorizedKeysDecoder();
-		final Scanner scanner = new Scanner(authKeysFile).useDelimiter("\n");
+		final Scanner scanner = new Scanner(file).useDelimiter("\n");
 		final Set<PublicKey> ret = new HashSet<PublicKey>();
 		while (scanner.hasNext()) {
 			ret.add(decoder.decodePublicKey(scanner.next()));
