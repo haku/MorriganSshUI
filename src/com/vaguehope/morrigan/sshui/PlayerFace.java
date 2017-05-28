@@ -24,7 +24,7 @@ import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
-import com.vaguehope.morrigan.player.OrderHelper.PlaybackOrder;
+import com.vaguehope.morrigan.player.PlaybackOrder;
 import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
