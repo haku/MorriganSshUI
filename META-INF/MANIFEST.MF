@@ -9,9 +9,6 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
  lib/lanterna-2.1.8.jar,
- lib/logback-classic-1.1.2.jar,
- lib/logback-core-1.1.2.jar,
- lib/slf4j-api-1.7.7.jar,
  lib/sshd-core-0.11.0.jar
 Import-Package: com.vaguehope.morrigan.config,
  com.vaguehope.morrigan.engines.playback,
@@ -24,5 +21,6 @@ Import-Package: com.vaguehope.morrigan.config,
  com.vaguehope.morrigan.tasks,
  com.vaguehope.morrigan.util,
  com.vaguehope.sqlitewrapper,
- org.osgi.framework
+ org.osgi.framework,
+ org.slf4j
 Export-Package: com.vaguehope.morrigan.sshui
