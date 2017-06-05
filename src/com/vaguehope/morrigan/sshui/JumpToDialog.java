@@ -11,31 +11,29 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.Border.Invisible;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.TextGraphics;
-import com.googlecode.lanterna.gui.Window;
-import com.googlecode.lanterna.gui.component.AbstractListBox;
-import com.googlecode.lanterna.gui.component.Button;
-import com.googlecode.lanterna.gui.component.EmptySpace;
-import com.googlecode.lanterna.gui.component.Label;
-import com.googlecode.lanterna.gui.component.Panel;
-import com.googlecode.lanterna.gui.component.TextBox;
-import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
-import com.googlecode.lanterna.terminal.TerminalPosition;
-import com.googlecode.lanterna.terminal.TerminalSize;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.AbstractListBox;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.GridLayout;
+import com.googlecode.lanterna.gui2.Interactable;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextBox;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.input.KeyStroke;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.model.media.MediaTagType;
-import com.vaguehope.morrigan.sshui.util.ReflectionHelper;
 import com.vaguehope.sqlitewrapper.DbException;
 
-public class JumpToDialog extends Window {
+public class JumpToDialog extends DialogWindow {
 
 	private static final int WIDTH = 70;
 	private static final int HEIGHT = 14;
@@ -59,59 +57,61 @@ public class JumpToDialog extends Window {
 		this.db = db;
 		this.savedSearchTerm = savedSearchTerm;
 
-		this.lblMsgs = new Label("");
-		addComponent(this.lblMsgs);
+		final Panel p = new Panel();
+		p.setLayoutManager(new GridLayout(1)
+				.setLeftMarginSize(1)
+				.setRightMarginSize(1));
 
-		this.txtSearch = new SearchTextBox(WIDTH, this);
-		addComponent(this.txtSearch);
+		this.lblMsgs = new Label("");
+		p.addComponent(this.lblMsgs);
+
+		this.txtSearch = new SearchTextBox(new TerminalSize(WIDTH, 1), this);
+		p.addComponent(this.txtSearch);
 
 		this.lstResults = new MediaItemListBox(new TerminalSize(WIDTH, HEIGHT), this);
-		addComponent(this.lstResults);
+		p.addComponent(this.lstResults);
 
-		this.lblTags = new Label("", WIDTH);
-		addComponent(this.lblTags);
+		this.lblTags = new Label("");
+		p.addComponent(this.lblTags);
 
-		final Panel btnPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		btnPanel.addComponent(new Button("Reveal", new Action() {
+		final Panel btnPanel = new Panel();
+		btnPanel.setLayoutManager(new LinearLayout(Direction.HORIZONTAL));
+		btnPanel.addComponent(new Button("Reveal", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				acceptRevealResult();
 			}
 		}));
-		btnPanel.addComponent(new Button("Enqueue All", new Action() {
+		btnPanel.addComponent(new Button("Enqueue All", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				acceptEnqueueAllResult();
 			}
 		}));
-		btnPanel.addComponent(new Button("Shuffle", new Action() {
+		btnPanel.addComponent(new Button("Shuffle", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				acceptShuffleResult();
 			}
 		}));
-		btnPanel.addComponent(new EmptySpace(WIDTH - 58, 1)); // FIXME magic numbers.
-		btnPanel.addComponent(new Button("Open", new Action() {
+		btnPanel.addComponent(new EmptySpace(new TerminalSize(WIDTH - 58, 1))); // FIXME magic numbers.
+		btnPanel.addComponent(new Button("Open", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				acceptOpenResult();
 			}
 		}));
-		btnPanel.addComponent(new Button("Close", new Action() {
+		btnPanel.addComponent(new Button("Close", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				close();
 			}
 		}));
-		addComponent(btnPanel);
 
-		final Panel contentPane = (Panel) ReflectionHelper.readField(this, "contentPane");
-		contentPane.addShortcut(Key.Kind.Escape, new Action() {
-			@Override
-			public void doAction () {
-				close();
-			}
-		});
+		btnPanel.addTo(p);
+		setComponent(p);
+
+		setCloseWindowWithEscape(true);
 
 		setSearchResults(null); // Init msgs.
 		final String term = savedSearchTerm.get();
@@ -127,14 +127,8 @@ public class JumpToDialog extends Window {
 		super.close();
 	}
 
-	@Override
-	protected void onClosed () {
-		this.alive = false;
-		super.onClosed();
-	}
-
 	protected boolean isAlive () {
-		return this.alive;
+		return this.alive && getTextGUI() != null;
 	}
 
 	private static final AtomicInteger BG_THREAD_NUMBER = new AtomicInteger(0);
@@ -186,10 +180,10 @@ public class JumpToDialog extends Window {
 				runAndThrow();
 			}
 			catch (final Exception e) { // NOSONAR report all errors to user.
-				this.dlg.getOwner().runInEventThread(new Action() {
+				this.dlg.getTextGUI().getGUIThread().invokeLater(new Runnable() {
 					@Override
-					public void doAction () {
-						MessageBox.showMessageBox(SearchRunner.this.dlg.getOwner(), "Error running search", e.toString());
+					public void run () {
+						MessageDialog.showMessageDialog(SearchRunner.this.dlg.getTextGUI(), "Error running search", e.toString());
 					}
 				});
 			}
@@ -203,11 +197,11 @@ public class JumpToDialog extends Window {
 					if (item == null) continue;
 					if (item instanceof IMediaTrack) {
 						final List<MediaTag> tags = this.dlg.db.getTags((IMediaTrack) item);
-						this.dlg.getOwner().runInEventThread(new ShowTags(this.dlg, tags));
+						this.dlg.getTextGUI().getGUIThread().invokeLater(new ShowTags(this.dlg, tags));
 					}
 					else {
 						final List<? extends IMediaTrack> results = doSearch(this.dlg);
-						this.dlg.getOwner().runInEventThread(new SetSearchResults(this.dlg, results));
+						this.dlg.getTextGUI().getGUIThread().invokeLater(new SetSearchResults(this.dlg, results));
 					}
 				}
 				catch (final InterruptedException e) { /* ignore. */}
@@ -222,7 +216,7 @@ public class JumpToDialog extends Window {
 
 	}
 
-	private static class SetSearchResults implements Action {
+	private static class SetSearchResults implements Runnable {
 
 		private final JumpToDialog dlg;
 		private final List<? extends IMediaTrack> results;
@@ -233,12 +227,12 @@ public class JumpToDialog extends Window {
 		}
 
 		@Override
-		public void doAction () {
+		public void run () {
 			this.dlg.setSearchResults(this.results);
 		}
 	}
 
-	private static class ShowTags implements Action {
+	private static class ShowTags implements Runnable {
 
 		private final JumpToDialog dlg;
 		private final List<MediaTag> tags;
@@ -249,7 +243,7 @@ public class JumpToDialog extends Window {
 		}
 
 		@Override
-		public void doAction () {
+		public void run () {
 			final StringBuilder s = new StringBuilder();
 			for (final MediaTag tag : this.tags) {
 				if (tag.getType() != MediaTagType.MANUAL) continue;
@@ -328,30 +322,30 @@ public class JumpToDialog extends Window {
 
 		private final JumpToDialog dialog;
 
-		public SearchTextBox (final int width, final JumpToDialog dialog) {
-			super("", width);
+		public SearchTextBox (final TerminalSize preferredSize, final JumpToDialog dialog) {
+			super(preferredSize);
 			this.dialog = dialog;
 		}
 
 		@Override
-		public Result keyboardInteraction (final Key key) {
-			switch (key.getKind()) {
+		public synchronized Result handleKeyStroke (final KeyStroke key) {
+			switch (key.getKeyType()) {
 				case Enter:
 					this.dialog.acceptEnqueueResult();
-					return Result.EVENT_HANDLED;
-				case NormalKey:
+					return Result.HANDLED;
+				case Character:
 				case Backspace:
 				case Delete:
 					this.dialog.requestSearch();
 					// Fall through.
 				default:
-					return super.keyboardInteraction(key);
+					return super.handleKeyStroke(key);
 			}
 		}
 
 	}
 
-	private static class MediaItemListBox extends AbstractListBox {
+	private static class MediaItemListBox extends AbstractListBox<IMediaTrack, MediaItemListBox> {
 
 		private final JumpToDialog dialog;
 
@@ -366,68 +360,56 @@ public class JumpToDialog extends Window {
 				for (final IMediaTrack track : items) {
 					addItem(track);
 				}
-				setSelectedItem(0);
+				setSelectedIndex(0);
 			}
 		}
 
 		public IMediaTrack getSelectedTrack () {
-			return (IMediaTrack) getSelectedItem();
+			return getSelectedItem();
 		}
 
 		@Override
-		protected String createItemString (final int index) {
-			return String.valueOf(getItemAt(index));
+		protected ListItemRenderer<IMediaTrack, MediaItemListBox> createDefaultListItemRenderer () {
+			return new ListItemRenderer<IMediaTrack, MediaItemListBox>() {
+				@Override
+				public int getHotSpotPositionOnLine (final int selectedIndex) {
+					return -1;
+				}
+			};
 		}
 
 		@Override
-		public TerminalPosition getHotspot () {
-			return null;
-		}
-
-		@Override
-		protected void afterEnteredFocus (final FocusChangeDirection direction) {
-			super.afterEnteredFocus(direction);
+		protected synchronized void afterEnterFocus (final FocusChangeDirection direction, final Interactable previouslyInFocus) {
+			super.afterEnterFocus(direction, previouslyInFocus);
 			selectedChanged();
 		}
 
 		@Override
-		public Result keyboardInteraction (final Key key) {
-			final Result result = super.keyboardInteraction(key);
+		public synchronized Result handleKeyStroke(final KeyStroke key) {
+			final Result result = super.handleKeyStroke(key);
 
-			switch (key.getKind()) {
+			switch (key.getKeyType()) {
 				case ArrowUp:
 				case ArrowDown:
 					selectedChanged();
 				default:
 			}
 
+			if (result == Result.UNHANDLED) {
+				switch (key.getKeyType()) {
+					case Enter:
+						this.dialog.acceptEnqueueResult();
+						return Result.HANDLED;
+					default:
+						return Result.UNHANDLED;
+				}
+			}
+
 			return result;
 		}
 
-		@Override
-		protected Result unhandledKeyboardEvent (final Key key) {
-			switch (key.getKind()) {
-				case Enter:
-					this.dialog.acceptEnqueueResult();
-					return Result.EVENT_HANDLED;
-				default:
-					return Result.EVENT_NOT_HANDLED;
-			}
-		}
-
 		private void selectedChanged () {
-			this.dialog.requestTags((IMediaTrack) getSelectedItem());
-		}
-
-		private static final ScreenCharacterStyle[] UNSELECTED = new ScreenCharacterStyle[] {};
-		private static final ScreenCharacterStyle[] SELECTED = new ScreenCharacterStyle[] { ScreenCharacterStyle.Reverse };
-
-		@Override
-		protected void printItem (final TextGraphics graphics, final int x, final int y, final int index) {
-			final boolean selected = index == getSelectedIndex() && !hasFocus();
-			String s = createItemString(index);
-			if (s.length() > graphics.getWidth()) s = s.substring(0, graphics.getWidth());
-			graphics.drawString(x, y, s, selected ? SELECTED : UNSELECTED);
+			this.dialog.requestTags(getSelectedItem());
 		}
 
 	}
@@ -490,10 +472,9 @@ public class JumpToDialog extends Window {
 
 	}
 
-	public static JumpResult show (final GUIScreen owner, final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) {
+	public static JumpResult show (final WindowBasedTextGUI owner, final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) {
 		final JumpToDialog dialog = new JumpToDialog(db, savedSearchTerm);
-		owner.showWindow(dialog, GUIScreen.Position.CENTER);
-		owner.getScreen().setCursorPosition(null);
+		dialog.showDialog(owner);
 		return dialog.getResult();
 	}
 

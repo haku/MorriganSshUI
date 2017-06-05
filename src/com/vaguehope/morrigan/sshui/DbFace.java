@@ -11,16 +11,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.dialog.ActionListDialog;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.ActionListDialog;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
-import com.googlecode.lanterna.screen.ScreenWriter;
-import com.googlecode.lanterna.terminal.Terminal.Color;
-import com.googlecode.lanterna.terminal.TerminalSize;
 import com.vaguehope.morrigan.model.db.IDbColumn;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaItemStorageLayer.SortDirection;
@@ -81,6 +80,7 @@ public class DbFace extends DefaultFace {
 	private boolean saveScrollOnClose = false;
 
 	public DbFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db, final Player defaultPlayer) throws MorriganException {
+		super(navigation);
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.db = db;
@@ -142,12 +142,11 @@ public class DbFace extends DefaultFace {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
-
+	public boolean onInput (final KeyStroke k, final WindowBasedTextGUI gui) throws Exception {
 		// TODO
 		// - jump back all searches? (Q) (go back to last player / non search Face?).
 
-		switch (k.getKind()) {
+		switch (k.getKeyType()) {
 			case ArrowUp:
 			case ArrowDown:
 				menuMove(k, 1);
@@ -168,7 +167,7 @@ public class DbFace extends DefaultFace {
 			case Enter:
 				playSelection(gui);
 				return true;
-			case NormalKey:
+			case Character:
 				switch (k.getCharacter()) {
 					case 'q':
 						saveScrollIfRequired();
@@ -215,13 +214,13 @@ public class DbFace extends DefaultFace {
 					default:
 				}
 			default:
-				return false;
+				return super.onInput(k, gui);
 		}
 	}
 
-	private void menuMove (final Key k, final int distance) throws MorriganException {
+	private void menuMove (final KeyStroke k, final int distance) throws MorriganException {
 		this.selectedItemIndex = MenuHelper.moveListSelectionIndex(this.selectedItemIndex,
-				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+				k.getKeyType() == KeyType.ArrowUp || k.getKeyType() == KeyType.PageUp
 						? VDirection.UP
 						: VDirection.DOWN,
 				distance,
@@ -270,11 +269,11 @@ public class DbFace extends DefaultFace {
 		return Collections.emptyList();
 	}
 
-	private Player getPlayer (final GUIScreen gui, final String title) {
+	private Player getPlayer (final WindowBasedTextGUI gui, final String title) {
 		return PlayerHelper.askWhichPlayer(gui, title, this.defaultPlayer, this.mnContext.getPlayerReader().getPlayers());
 	}
 
-	private void enqueueDb (final GUIScreen gui) {
+	private void enqueueDb (final WindowBasedTextGUI gui) {
 		final Player player = getPlayer(gui, "Enqueue DB");
 		if (player != null) enqueuePlayItem(new PlayItem(this.db, null), player);
 	}
@@ -285,13 +284,13 @@ public class DbFace extends DefaultFace {
 		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s in %s.", playItem, player.getName()));
 	}
 
-	private void enqueueSelection (final GUIScreen gui) {
+	private void enqueueSelection (final WindowBasedTextGUI gui) {
 		final List<IMixedMediaItem> items = getSelectedItems();
 		enqueueItems(gui, items);
 		if (items.size() == 1 && items.contains(getSelectedItem())) this.selectedItemIndex += 1;
 	}
 
-	private void enqueueItems (final GUIScreen gui, final List<? extends IMediaTrack> tracks) {
+	private void enqueueItems (final WindowBasedTextGUI gui, final List<? extends IMediaTrack> tracks) {
 		if (tracks.size() < 1) return;
 		final Player player = getPlayer(gui, String.format("Enqueue %s items", tracks.size()));
 		if (player == null) return;
@@ -299,11 +298,11 @@ public class DbFace extends DefaultFace {
 		this.lastActionMessage.setLastActionMessage(String.format("Enqueued %s items in %s.", tracks.size(), player.getName()));
 	}
 
-	private void playSelection (final GUIScreen gui) {
+	private void playSelection (final WindowBasedTextGUI gui) {
 		playItems(gui, getSelectedItems());
 	}
 
-	private void playItems (final GUIScreen gui, final List<IMixedMediaItem> tracks) {
+	private void playItems (final WindowBasedTextGUI gui, final List<IMixedMediaItem> tracks) {
 		if (tracks.size() < 1) return;
 		final Player player = getPlayer(gui, String.format("Play %s items", tracks.size()));
 		if (player == null) return;
@@ -311,7 +310,7 @@ public class DbFace extends DefaultFace {
 		PlayerHelper.playAll(this.db, tracks, player);
 	}
 
-	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
+	private void showEditTagsForSelectedItem (final WindowBasedTextGUI gui) throws MorriganException {
 		final IMixedMediaItem item = getSelectedItem();
 		if (item == null) return;
 		TagEditor.show(gui, this.db, item);
@@ -324,7 +323,7 @@ public class DbFace extends DefaultFace {
 		updateItemDetailsBar();
 	}
 
-	private void askExportSelection (final GUIScreen gui) {
+	private void askExportSelection (final WindowBasedTextGUI gui) {
 		this.savedInitialDir.compareAndSet(null, new File(System.getProperty("user.home")));
 		final List<IMixedMediaItem> items = getSelectedItems();
 		if (items.size() < 1) return;
@@ -343,45 +342,42 @@ public class DbFace extends DefaultFace {
 		this.lastActionMessage.setLastActionMessage(String.format("Toggled enabled on %s items.", items.size()));
 	}
 
-	private void askSortColumn (final GUIScreen gui) {
+	private void askSortColumn (final WindowBasedTextGUI gui) {
 		final List<IDbColumn> cols = this.db.getDbLayer().getMediaTblColumns();
-		final List<Action> actions = new ArrayList<Action>();
+		final List<Runnable> actions = new ArrayList<Runnable>();
 		for (final IDbColumn col : cols) {
 			if (col.getHumanName() != null) {
 				actions.add(new SortColumnAction(this.db, col, SortDirection.ASC));
 				actions.add(new SortColumnAction(this.db, col, SortDirection.DESC));
 			}
 		}
-		ActionListDialog.showActionListDialog(gui, "Sort Order", "Current: " + PrintingThingsHelper.sortSummary(this.db),
-				actions.toArray(new Action[actions.size()]));
+		ActionListDialog.showDialog(gui, "Sort Order", "Current: " + PrintingThingsHelper.sortSummary(this.db),
+				actions.toArray(new Runnable[actions.size()]));
 	}
 
-	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+	private void askSearch (final WindowBasedTextGUI gui) throws DbException, MorriganException {
 		this.dbHelper.askSearch(gui, this.db, this.savedSearchTerm);
 	}
 
 	@Override
-	public void writeScreen (final Screen scr, final ScreenWriter w) {
+	public void writeScreen (final Screen scr, final TextGraphics tg) {
 		if (this.db != null) {
-			writeDbToScreen(scr, w);
+			writeDbToScreen(scr, tg);
 		}
 		else {
-			w.drawString(0, 0, "Unable to show null db.");
+			tg.putString(0, 0, "Unable to show null db.");
 		}
 	}
 
-	private static final ScreenCharacterStyle[] UNSELECTED = new ScreenCharacterStyle[] {};
-	private static final ScreenCharacterStyle[] SELECTED = new ScreenCharacterStyle[] { ScreenCharacterStyle.Reverse };
-
-	private void writeDbToScreen (final Screen scr, final ScreenWriter w) {
+	private void writeDbToScreen (final Screen scr, final TextGraphics tg) {
 		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
 
-		w.drawString(0, l++, String.format("DB %s: %s   %s",
+		tg.putString(0, l++, String.format("DB %s: %s   %s",
 				this.db.getListName(),
 				PrintingThingsHelper.dbSummary(this.db),
 				PrintingThingsHelper.sortSummary(this.db)));
-		this.lastActionMessage.drawLastActionMessage(w, l++);
+		this.lastActionMessage.drawLastActionMessage(tg, l++);
 
 		this.pageSize = terminalSize.getRows() - l - 1;
 		if (this.selectedItemIndex >= 0) {
@@ -399,47 +395,62 @@ public class DbFace extends DefaultFace {
 
 		for (int i = this.scrollTop; i < this.mediaItems.size(); i++) {
 			if (i >= this.scrollTop + this.pageSize) break;
-			final IMixedMediaItem item = this.mediaItems.get(i);
-			final ScreenCharacterStyle[] style = i == this.selectedItemIndex ? SELECTED : UNSELECTED;
-			final String name = String.valueOf(item);
-			w.drawString(1, l, name, style);
 
-			final ScreenCharacterStyle[] flagStyle = this.selectedItems.contains(item) ? SELECTED : UNSELECTED;
+			final IMixedMediaItem item = this.mediaItems.get(i);
+			final String name = String.valueOf(item);
+
+			final boolean selectedItem = this.selectedItems.contains(item);
+			if (selectedItem) {
+				tg.enableModifiers(SGR.REVERSE);
+			}
+			else {
+				tg.disableModifiers(SGR.REVERSE);
+			}
+
 			if (item.isMissing()) {
-				scr.putString(0, l, "m", Color.YELLOW, Color.DEFAULT, flagStyle);
-				scr.putString(name.length() + 2, l, "(missing)", Color.YELLOW, Color.DEFAULT);
+				this.textGuiUtils.drawTextWithFg(tg, 0, l, "m", TextColor.ANSI.YELLOW);
+				this.textGuiUtils.drawTextWithFg(tg, name.length() + 2, l, "(missing)", TextColor.ANSI.YELLOW);
 			}
 			else if (!item.isEnabled()) {
-				scr.putString(0, l, "d", Color.RED, Color.DEFAULT, flagStyle);
-				scr.putString(name.length() + 2, l, "(disabled)", Color.RED, Color.DEFAULT);
+				this.textGuiUtils.drawTextWithFg(tg, 0, l, "d", TextColor.ANSI.RED);
+				this.textGuiUtils.drawTextWithFg(tg, name.length() + 2, l, "(disabled)", TextColor.ANSI.RED);
 			}
-			else if (flagStyle.length > 0) {
-				scr.putString(0, l, ">", Color.DEFAULT, Color.DEFAULT, flagStyle);
+			else if (selectedItem) {
+				tg.putString(0, l, ">");
 			}
+
+			if (i == this.selectedItemIndex) {
+				tg.enableModifiers(SGR.REVERSE);
+			}
+			else {
+				tg.disableModifiers(SGR.REVERSE);
+			}
+			tg.putString(1, l, name);
 
 			// Last played column.
 			if (item.getDateLastPlayed() != null) {
 				final String lastPlayed = String.format(" %s", this.dateFormat.format(item.getDateLastPlayed()));
-				w.drawString(colRightLastPlayed - lastPlayed.length(), l, lastPlayed, style);
+				tg.putString(colRightLastPlayed - lastPlayed.length(), l, lastPlayed);
 			}
 
 			// Play count column.
 			if (item.getStartCount() > 0 || item.getEndCount() > 0) {
 				final String counts = String.format("%4s/%-3s", item.getStartCount(), item.getEndCount());
-				w.drawString(colRightPlayCount - counts.length(), l, counts, style);
+				tg.putString(colRightPlayCount - counts.length(), l, counts);
 			}
 
 			// Duration column.
 			final String dur = formatTimeSecondsLeftPadded(item.getDuration());
-			w.drawString(colRightDuration - dur.length(), l, dur, style);
+			tg.putString(colRightDuration - dur.length(), l, dur);
 
 			l++;
 		}
+		tg.disableModifiers(SGR.REVERSE);
 
-		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
-		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
+		this.textGuiUtils.drawTextRowWithBg(tg, terminalSize.getRows() - 1, this.itemDetailsBar, TextColor.ANSI.WHITE, TextColor.ANSI.BLUE, SGR.BOLD);
+		this.textGuiUtils.drawTextWithBg(tg, terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
 				PrintingThingsHelper.scrollSummary(this.mediaItems.size(), this.pageSize, this.scrollTop),
-				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+				TextColor.ANSI.WHITE, TextColor.ANSI.BLUE, SGR.BOLD);
 	}
 
 	private static String formatTimeSecondsLeftPadded (final long seconds) {
@@ -449,7 +460,7 @@ public class DbFace extends DefaultFace {
 		return String.format(" %4d:%02d", (seconds % 3600) / 60, (seconds % 60));
 	}
 
-	private static class SortColumnAction implements Action {
+	private static class SortColumnAction implements Runnable {
 
 		private final IMixedMediaDb db;
 		private final IDbColumn col;
@@ -467,7 +478,7 @@ public class DbFace extends DefaultFace {
 		}
 
 		@Override
-		public void doAction () {
+		public void run () {
 			try {
 				this.db.setSort(this.col, this.direction);
 			}

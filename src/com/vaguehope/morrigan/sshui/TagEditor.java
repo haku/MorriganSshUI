@@ -1,29 +1,28 @@
 package com.vaguehope.morrigan.sshui;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.Border.Invisible;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.Window;
-import com.googlecode.lanterna.gui.component.AbstractListBox;
-import com.googlecode.lanterna.gui.component.Button;
-import com.googlecode.lanterna.gui.component.Label;
-import com.googlecode.lanterna.gui.component.Panel;
-import com.googlecode.lanterna.gui.component.TextBox;
-import com.googlecode.lanterna.gui.dialog.DialogButtons;
-import com.googlecode.lanterna.gui.dialog.DialogResult;
-import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.terminal.TerminalPosition;
-import com.googlecode.lanterna.terminal.TerminalSize;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.AbstractListBox;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.GridLayout;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextBox;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.model.media.MediaTag;
 import com.vaguehope.morrigan.model.media.MediaTagClassification;
 import com.vaguehope.morrigan.model.media.MediaTagType;
-import com.vaguehope.morrigan.sshui.util.ReflectionHelper;
 
-public class TagEditor extends Window {
+public class TagEditor extends DialogWindow {
 
 	protected final IMediaTrackList<?> list;
 	protected final IMediaTrack item;
@@ -37,29 +36,31 @@ public class TagEditor extends Window {
 		this.list = list;
 		this.item = item;
 
-		this.txtNewTag = new AddTagTextBox(50, this);
-		addComponent(this.txtNewTag);
+		final Panel p = new Panel();
+		p.setLayoutManager(new GridLayout(1)
+				.setLeftMarginSize(1)
+				.setRightMarginSize(1));
+
+		this.txtNewTag = new AddTagTextBox(new TerminalSize(50, 1), this);
+		p.addComponent(this.txtNewTag);
 
 		this.lstTags = new TagListBox(new TerminalSize(50, 10), this); // FIXME hard-coded size.
-		addComponent(this.lstTags);
+		p.addComponent(this.lstTags);
 
-		final Panel cancelPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		cancelPanel.addComponent(new Label("                "));
-		cancelPanel.addComponent(new Button("Close", new Action() {
+		final Panel btnPanel = new Panel();
+		btnPanel.setLayoutManager(new LinearLayout(Direction.HORIZONTAL));
+		btnPanel.addComponent(new Label("                "));
+		btnPanel.addComponent(new Button("Close", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				close();
 			}
 		}));
-		addComponent(cancelPanel);
 
-		final Panel contentPane = (Panel) ReflectionHelper.readField(this, "contentPane");
-		contentPane.addShortcut(Key.Kind.Escape, new Action() {
-			@Override
-			public void doAction () {
-				close();
-			}
-		});
+		btnPanel.addTo(p);
+		setComponent(p);
+
+		setCloseWindowWithEscape(true);
 
 		this.lstTags.reloadTags();
 	}
@@ -68,19 +69,19 @@ public class TagEditor extends Window {
 
 		private final TagEditor tagEditor;
 
-		public AddTagTextBox (final int width, final TagEditor tagEditor) {
-			super("", width);
+		public AddTagTextBox (final TerminalSize preferredSize, final TagEditor tagEditor) {
+			super(preferredSize);
 			this.tagEditor = tagEditor;
 		}
 
 		@Override
-		public Result keyboardInteraction (final Key key) {
-			switch (key.getKind()) {
+		public synchronized Result handleKeyStroke (final KeyStroke key) {
+			switch (key.getKeyType()) {
 				case Enter:
 					addTag();
-					return Result.EVENT_HANDLED;
+					return Result.HANDLED;
 				default:
-					return super.keyboardInteraction(key);
+					return super.handleKeyStroke(key);
 			}
 		}
 
@@ -93,13 +94,13 @@ public class TagEditor extends Window {
 				this.tagEditor.lstTags.reloadTags();
 			}
 			catch (final MorriganException e) {
-				MessageBox.showMessageBox(getGUIScreen(), "Error adding tag", e.toString());
+				MessageDialog.showMessageDialog(this.tagEditor.getTextGUI(), "Error adding tag", e.toString());
 			}
 		}
 
 	}
 
-	private static class TagListBox extends AbstractListBox {
+	private static class TagListBox extends AbstractListBox<MediaTag, TagListBox> {
 
 		private final TagEditor tagEditor;
 
@@ -109,16 +110,16 @@ public class TagEditor extends Window {
 		}
 
 		@Override
-		protected Result unhandledKeyboardEvent (final Key key) {
-			if (key.getKind() == Key.Kind.NormalKey && key.getCharacter() == 'r') {
+		public synchronized Result handleKeyStroke (final KeyStroke key) {
+			if (key.getKeyType() == KeyType.Character && key.getCharacter() == 'r') {
 				userRefresh();
-				return Result.EVENT_HANDLED;
+				return Result.HANDLED;
 			}
-			else if (key.getKind() == Key.Kind.Delete) {
+			else if (key.getKeyType() == KeyType.Delete) {
 				askDeleteTag();
-				return Result.EVENT_HANDLED;
+				return Result.HANDLED;
 			}
-			return Result.EVENT_NOT_HANDLED;
+			return super.handleKeyStroke(key);
 		}
 
 		public void userRefresh () {
@@ -126,7 +127,7 @@ public class TagEditor extends Window {
 				reloadTags();
 			}
 			catch (final MorriganException e) {
-				MessageBox.showMessageBox(getGUIScreen(), "Error reloading tags", e.toString());
+				MessageDialog.showMessageDialog(this.tagEditor.getTextGUI(), "Error reloading tags", e.toString());
 			}
 		}
 
@@ -138,27 +139,27 @@ public class TagEditor extends Window {
 		}
 
 		private void askDeleteTag () {
-			final MediaTag tag = (MediaTag) getSelectedItem();
+			final MediaTag tag = getSelectedItem();
 			if (tag == null) return;
-			if (MessageBox.showMessageBox(getGUIScreen(), "Delete Tag", tag.toString(), DialogButtons.YES_NO) != DialogResult.YES) return;
+			if (MessageDialog.showMessageDialog(this.tagEditor.getTextGUI(), "Delete Tag", tag.toString(), MessageDialogButton.Yes, MessageDialogButton.No) != MessageDialogButton.Yes) return;
 			try {
 				this.tagEditor.list.removeTag(tag);
 				this.tagEditor.txtNewTag.setText(tag.getTag());
 				this.tagEditor.lstTags.reloadTags();
 			}
 			catch (final MorriganException e) {
-				MessageBox.showMessageBox(getGUIScreen(), "Error deleting tag", e.toString());
+				MessageDialog.showMessageDialog(this.tagEditor.getTextGUI(), "Error deleting tag", e.toString());
 			}
 		}
 
 		@Override
-		protected String createItemString (final int index) {
-			return String.valueOf(getItemAt(index));
-		}
-
-		@Override
-		public TerminalPosition getHotspot () {
-			return null;
+		protected ListItemRenderer<MediaTag, TagListBox> createDefaultListItemRenderer () {
+			return new ListItemRenderer<MediaTag, TagListBox>() {
+				@Override
+				public int getHotSpotPositionOnLine (final int selectedIndex) {
+					return -1;
+				}
+			};
 		}
 
 	}
@@ -168,9 +169,8 @@ public class TagEditor extends Window {
 		return s.substring(0, maxLength);
 	}
 
-	public static void show (final GUIScreen owner, final IMediaTrackList<?> list, final IMediaTrack item) throws MorriganException {
-		owner.showWindow(new TagEditor(list, item), GUIScreen.Position.CENTER);
-		owner.getScreen().setCursorPosition(null);
+	public static void show (final WindowBasedTextGUI owner, final IMediaTrackList<?> list, final IMediaTrack item) throws MorriganException {
+		new TagEditor(list, item).showDialog(owner);
 	}
 
 }

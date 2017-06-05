@@ -5,16 +5,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-public class SshInputMapping extends KeyMappingProfile {
+public class SshInputMapping implements KeyDecodingProfile {
 
 	private static final List<CharacterPattern> PATTERNS = new ArrayList<CharacterPattern>(
 			Arrays.asList(
 					new CharacterPattern[] {
-							new BasicCharacterPattern(new Key(Key.Kind.Enter), '\r')
+							new BasicCharacterPattern(new KeyStroke(KeyType.Enter), '\r')
 					}));
 
 	@Override
-	Collection<CharacterPattern> getPatterns () {
+	public Collection<CharacterPattern> getPatterns () {
 		return PATTERNS;
 	}
 

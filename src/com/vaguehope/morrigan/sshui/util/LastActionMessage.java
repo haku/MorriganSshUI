@@ -1,6 +1,6 @@
 package com.vaguehope.morrigan.sshui.util;
 
-import com.googlecode.lanterna.screen.ScreenWriter;
+import com.googlecode.lanterna.graphics.TextGraphics;
 
 public class LastActionMessage {
 
@@ -14,12 +14,12 @@ public class LastActionMessage {
 		this.lastActionMessageTime = System.currentTimeMillis();
 	}
 
-	public void drawLastActionMessage (final ScreenWriter w, final int line) {
+	public void drawLastActionMessage (final TextGraphics tg, final int line) {
 		if (this.lastActionMessage != null && System.currentTimeMillis() - this.lastActionMessageTime > LAST_ACTION_MESSAGE_DURATION_MILLIS) {
 			this.lastActionMessage = null;
 		}
 		if (this.lastActionMessage != null && this.lastActionMessage.length() > 0) {
-			w.drawString(0, line, String.format(">> %s", this.lastActionMessage));
+			tg.putString(0, line, String.format(">> %s", this.lastActionMessage));
 		}
 	}
 

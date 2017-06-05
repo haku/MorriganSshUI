@@ -5,20 +5,20 @@ import java.io.FileFilter;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.Border.Invisible;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.Window;
-import com.googlecode.lanterna.gui.component.AbstractListBox;
-import com.googlecode.lanterna.gui.component.Button;
-import com.googlecode.lanterna.gui.component.EmptySpace;
-import com.googlecode.lanterna.gui.component.Label;
-import com.googlecode.lanterna.gui.component.Panel;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.terminal.TerminalPosition;
-import com.googlecode.lanterna.terminal.TerminalSize;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.AbstractListBox;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.GridLayout;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
+import com.googlecode.lanterna.input.KeyStroke;
 
-public class DirDialog extends Window {
+public class DirDialog extends DialogWindow {
 
 	private static final int WIDTH = 70;
 	private static final int HEIGHT = 14;
@@ -34,27 +34,37 @@ public class DirDialog extends Window {
 		super(title);
 		this.savedInitialDir = savedInitialDir;
 
+		final Panel p = new Panel();
+		p.setLayoutManager(new GridLayout(1)
+				.setLeftMarginSize(1)
+				.setRightMarginSize(1));
+
 		this.lblInfo = new Label("");
-		addComponent(this.lblInfo);
+		p.addComponent(this.lblInfo);
 
 		this.lstDirs = new DirListBox(new TerminalSize(WIDTH, HEIGHT), this);
-		addComponent(this.lstDirs);
+		p.addComponent(this.lstDirs);
 
-		final Panel btnPanel = new Panel(new Invisible(), Panel.Orientation.HORISONTAL);
-		btnPanel.addComponent(new Button(actionLabel, new Action() {
+		final Panel btnPanel = new Panel();
+		btnPanel.setLayoutManager(new LinearLayout(Direction.HORIZONTAL));
+		btnPanel.addComponent(new Button(actionLabel, new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				acceptResult();
 			}
 		}));
-		btnPanel.addComponent(new EmptySpace(WIDTH - 18, 1)); // FIXME magic numbers.
-		btnPanel.addComponent(new Button("Close", new Action() {
+		btnPanel.addComponent(new EmptySpace(new TerminalSize(WIDTH - 18, 1))); // FIXME magic numbers.
+		btnPanel.addComponent(new Button("Close", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				close();
 			}
 		}));
-		addComponent(btnPanel);
+
+		btnPanel.addTo(p);
+		setComponent(p);
+
+		setCloseWindowWithEscape(true);
 
 		this.lstDirs.setDir(savedInitialDir.get());
 	}
@@ -69,7 +79,7 @@ public class DirDialog extends Window {
 		close();
 	}
 
-	private static class DirListBox extends AbstractListBox {
+	private static class DirListBox extends AbstractListBox<File, DirListBox> {
 
 		private final DirDialog dialog;
 
@@ -97,30 +107,34 @@ public class DirDialog extends Window {
 		}
 
 		public File getSelectedDir () {
-			return (File) getSelectedItem();
+			return getSelectedItem();
 		}
 
 		@Override
-		protected String createItemString (final int index) {
-			return ((File) getItemAt(index)).getName();
+		protected ListItemRenderer<File, DirListBox> createDefaultListItemRenderer () {
+			return new ListItemRenderer<File, DirListBox>() {
+				@Override
+				public int getHotSpotPositionOnLine (final int selectedIndex) {
+					return -1;
+				}
+				@Override
+				public String getLabel (final DirListBox listBox, final int index, final File item) {
+					return item.getName();
+				}
+			};
 		}
 
 		@Override
-		public TerminalPosition getHotspot () {
-			return null;
-		}
-
-		@Override
-		protected Result unhandledKeyboardEvent (final Key key) {
-			switch (key.getKind()) {
+		public synchronized Result handleKeyStroke (final KeyStroke key) {
+			switch (key.getKeyType()) {
 				case Enter:
 					enterSelectedDir();
-					return Result.EVENT_HANDLED;
+					return Result.HANDLED;
 				case Backspace:
 					gotoParentDir();
-					return Result.EVENT_HANDLED;
+					return Result.HANDLED;
 				default:
-					return Result.EVENT_NOT_HANDLED;
+					return Result.UNHANDLED;
 			}
 		}
 
@@ -137,14 +151,14 @@ public class DirDialog extends Window {
 			final File prevDir = this.currentDir;
 			setDir(parentDir);
 			final int prevI = indexOf(prevDir);
-			if (prevI >= 0) setSelectedItem(prevI);
+			if (prevI >= 0) setSelectedIndex(prevI);
 		}
 
 	}
 
-	public static File show (final GUIScreen owner, final String title, final String actionLabel, final AtomicReference<File> savedInitialDir) {
+	public static File show (final WindowBasedTextGUI owner, final String title, final String actionLabel, final AtomicReference<File> savedInitialDir) {
 		final DirDialog dialog = new DirDialog(title, actionLabel, savedInitialDir);
-		owner.showWindow(dialog, GUIScreen.Position.CENTER);
+		dialog.showDialog(owner);
 		return dialog.getResult();
 	}
 

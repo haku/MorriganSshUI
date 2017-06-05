@@ -8,7 +8,7 @@ Bundle-Vendor: vaguehope.com
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
- lib/lanterna-2.1.8.jar,
+ lib/lanterna-3.0.0-rc1.jar,
  lib/sshd-core-0.11.0.jar
 Import-Package: com.vaguehope.morrigan.config,
  com.vaguehope.morrigan.engines.playback,

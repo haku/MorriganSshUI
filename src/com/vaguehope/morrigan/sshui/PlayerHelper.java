@@ -6,9 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.dialog.ActionListDialog;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.ActionListDialog;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.player.PlayItem;
@@ -44,7 +43,7 @@ public final class PlayerHelper {
 		}
 	}
 
-	public static Player askWhichPlayer (final GUIScreen gui, final String title, final Player defaultPlayer, final Collection<Player> players) {
+	public static Player askWhichPlayer (final WindowBasedTextGUI gui, final String title, final Player defaultPlayer, final Collection<Player> players) {
 		if (defaultPlayer != null) return defaultPlayer;
 		if (players == null || players.size() < 1) {
 			return null;
@@ -54,22 +53,22 @@ public final class PlayerHelper {
 		}
 		else {
 			final AtomicReference<Player> ret = new AtomicReference<Player>();
-			final List<Action> actions = new ArrayList<Action>();
+			final List<Runnable> actions = new ArrayList<Runnable>();
 			for (final Player player : players) {
-				actions.add(new Action() {
+				actions.add(new Runnable() {
 					@Override
 					public String toString () {
 						return player.getName();
 					}
 
 					@Override
-					public void doAction () {
+					public void run () {
 						ret.set(player);
 					}
 				});
 			}
-			ActionListDialog.showActionListDialog(gui, title, "Select player",
-					actions.toArray(new Action[actions.size()]));
+			ActionListDialog.showDialog(gui, title, "Select player",
+					actions.toArray(new Runnable[actions.size()]));
 			return ret.get();
 		}
 	}

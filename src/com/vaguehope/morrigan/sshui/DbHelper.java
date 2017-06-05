@@ -3,7 +3,7 @@ package com.vaguehope.morrigan.sshui;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.GUIScreen;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.ILocalMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
@@ -44,7 +44,7 @@ public class DbHelper {
 		throw new IllegalArgumentException("Unknown DB type: " + ref);
 	}
 
-	public void askSearch (final GUIScreen gui, final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) throws DbException, MorriganException {
+	public void askSearch (final WindowBasedTextGUI gui, final IMixedMediaDb db, final AtomicReference<String> savedSearchTerm) throws DbException, MorriganException {
 		final JumpResult res = JumpToDialog.show(gui, db, savedSearchTerm);
 		if (res == null) return;
 		switch (res.getType()) {
@@ -64,7 +64,7 @@ public class DbHelper {
 		}
 	}
 
-	private void enqueueItems (final GUIScreen gui, final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks) {
+	private void enqueueItems (final WindowBasedTextGUI gui, final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks) {
 		final Player player = getPlayer(gui, String.format("Enqueue %s items", tracks.size()));
 		if (player == null) return;
 		PlayerHelper.enqueueAll(db, tracks, player);
@@ -82,7 +82,7 @@ public class DbHelper {
 		}
 	}
 
-	private void shuffleAndEnqueue (final GUIScreen gui, final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks) {
+	private void shuffleAndEnqueue (final WindowBasedTextGUI gui, final IMediaTrackList<? extends IMediaTrack> db, final List<? extends IMediaTrack> tracks) {
 		final Player player = getPlayer(gui, "Shuffle and enqueue");
 		if (player != null) PlayerHelper.shuffleAndEnqueue(db, tracks, player);
 	}
@@ -93,7 +93,7 @@ public class DbHelper {
 				this.defaultPlayer));
 	}
 
-	private Player getPlayer (final GUIScreen gui, final String title) {
+	private Player getPlayer (final WindowBasedTextGUI gui, final String title) {
 		return PlayerHelper.askWhichPlayer(gui, title, this.defaultPlayer, this.mnContext.getPlayerReader().getPlayers());
 	}
 

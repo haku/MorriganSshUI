@@ -1,39 +1,22 @@
 package com.vaguehope.morrigan.sshui;
 
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenWriter;
 
 public class HelpFace extends DefaultFace {
 
-	private final FaceNavigation navigation;
 	private final String helpText;
 
 	public HelpFace (final FaceNavigation navigation, final String helpText) {
-		this.navigation = navigation;
+		super(navigation);
 		this.helpText = helpText;
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) {
-		switch (k.getKind()) {
-			case NormalKey:
-				switch (k.getCharacter()) {
-					case 'q':
-						return this.navigation.backOneLevel();
-					default:
-				}
-			default:
-				return false;
-		}
-	}
-
-	@Override
-	public void writeScreen (final Screen scr, final ScreenWriter w) {
+	public void writeScreen (final Screen scr, final TextGraphics tg) {
 		int l = 0;
 		for (final String line : this.helpText.split("\n")) {
-			w.drawString(0, l++, line);
+			tg.putString(0, l++, line);
 		}
 	}
 

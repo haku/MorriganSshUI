@@ -14,7 +14,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<tycho-version>0.20.0</tycho-version>
-		<lanterna.version>2.1.8</lanterna.version>
+		<lanterna.version>3.0.0-rc1</lanterna.version>
 		<sshd.version>0.11.0</sshd.version>
 		<logback.version>1.1.2</logback.version>
 		<slf4j.version>1.7.7</slf4j.version>

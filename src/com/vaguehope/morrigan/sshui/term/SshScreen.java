@@ -1,5 +1,6 @@
 package com.vaguehope.morrigan.sshui.term;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -8,17 +9,16 @@ import org.apache.sshd.server.ExitCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.googlecode.lanterna.TerminalFacade;
-import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenWriter;
+import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.vaguehope.morrigan.sshui.util.Quietly;
 
 public abstract class SshScreen implements Runnable {
 
 	private static final long PRINT_CYCLE_NANOS = TimeUnit.MILLISECONDS.toNanos(500L);
-	private static final long WIPE_CYCLE_NANOS = TimeUnit.SECONDS.toNanos(3L);
 	private static final long SHUTDOWN_TIMEOUT_MILLIS = TimeUnit.SECONDS.toNanos(5L);
 
 	private static final Logger LOG = LoggerFactory.getLogger(SshScreen.class);
@@ -29,22 +29,21 @@ public abstract class SshScreen implements Runnable {
 	private final ExitCallback callback;
 
 	private final Screen screen;
-	private final ScreenWriter screenWriter;
+	private final TextGraphics textGraphics;
 
 	private volatile boolean alive = true;
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 	private boolean inited = false;
 	private long threadId;
 	private long lastPrint = 0L;
-	private long lastWipe = 0L;
 
-	public SshScreen (final String name, final Environment env, final Terminal terminal, final ExitCallback callback) {
+	public SshScreen (final String name, final Environment env, final Terminal terminal, final ExitCallback callback) throws IOException {
 		this.name = name;
 		this.env = env;
 		this.terminal = terminal;
 		this.callback = callback;
-		this.screen = TerminalFacade.createScreen(this.terminal);
-		this.screenWriter = new ScreenWriter(this.screen);
+		this.screen = new TerminalScreen(this.terminal);
+		this.textGraphics = this.screen.newTextGraphics();
 	}
 
 	public void stopAndJoin (final String reason) {
@@ -63,12 +62,12 @@ public abstract class SshScreen implements Runnable {
 		return this.env;
 	}
 
-	private void init () {
+	private void init () throws IOException {
 		if (!this.inited) {
 			this.inited = true; // Only try once.
 			this.threadId = Thread.currentThread().getId();
-			this.screen.startScreen();
 			initScreen(this.screen);
+			this.screen.startScreen();
 			LOG.info("Session created: {}", this.name);
 		}
 	}
@@ -87,75 +86,55 @@ public abstract class SshScreen implements Runnable {
 			scheduleQuit("session error");
 		}
 		finally {
-			this.screen.stopScreen();
-			this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
+			try {
+				this.screen.stopScreen();
+				this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
+			}
+			catch (final IOException e) {
+				LOG.warn("Failed to shutdown session cleanly.", e);
+			}
 			this.callback.onExit(0, "baibai!");
 			LOG.info("Session destroyed: {}", this.name);
 			this.shutdownLatch.countDown();
 		}
 	}
 
-	public boolean checkAndMarkRedrawRequired () {
+	private void tick () throws IOException, InterruptedException {
 		final long now = System.nanoTime();
-		final boolean required = redrawRequired(now);
-		if (required) this.lastPrint = now;
-		return required;
-	}
-
-	private boolean redrawRequired (final long now) {
-		return now - this.lastPrint > PRINT_CYCLE_NANOS;
-	}
-
-	private void tick () {
-		final long now = System.nanoTime();
-		if (readInput() || redrawRequired(now)) {
-
-			// FIXME this is a hack for unicode characters not clearing.
-			boolean completeRefresh = false;
-			if (now - this.lastWipe > WIPE_CYCLE_NANOS) {
-				completeRefresh = true;
-				this.lastWipe = now;
-			}
-
-			printScreen(completeRefresh);
+		if (readInput() || now - this.lastPrint > PRINT_CYCLE_NANOS) {
+			printScreen();
 			this.lastPrint = now;
 		}
 	}
 
-	private boolean readInput () {
+	private boolean readInput () throws IOException, InterruptedException {
 		boolean changed = false;
-		Key k;
-		while ((k = this.terminal.readInput()) != null) {
+		KeyStroke k;
+		while ((k = this.terminal.pollInput()) != null) { // Non blocking.
 			changed = onInput(k) || changed;
 		}
 		return changed;
 	}
 
-	protected void printScreen (final boolean completeRefresh) {
-		if (this.screen.resizePending()) {
-			this.screenWriter.fillScreen(' ');
-			this.screen.refresh();
-		}
-		else if (completeRefresh) {
-			this.screen.completeRefresh();
-		}
+	protected void printScreen () throws IOException {
+		this.screen.doResizeIfNecessary();
 
 		this.screen.clear();
-		writeScreen();
+		writeScreen(this.screen, this.textGraphics);
 		this.screen.refresh();
 	}
 
 	protected void writeScreen () {
-		writeScreen(this.screen, this.screenWriter);
+		writeScreen(this.screen, this.textGraphics);
 	}
 
 	/**
 	 * Return true if screen needs redrawing.
 	 */
-	protected abstract boolean onInput (Key k);
+	protected abstract boolean onInput (KeyStroke k) throws IOException, InterruptedException;
 
 	protected abstract void initScreen (Screen scr);
 
-	protected abstract void writeScreen (Screen scr, ScreenWriter w);
+	protected abstract void writeScreen (Screen scr, TextGraphics tg);
 
 }

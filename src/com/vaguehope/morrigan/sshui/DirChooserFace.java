@@ -4,15 +4,13 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.Arrays;
 
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
-import com.googlecode.lanterna.screen.ScreenWriter;
-import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
-import com.vaguehope.sqlitewrapper.DbException;
 
 public class DirChooserFace extends DefaultFace {
 
@@ -35,6 +33,7 @@ public class DirChooserFace extends DefaultFace {
 	private int pageSize = 1;
 
 	public DirChooserFace (final FaceNavigation navigation, final File initialDir) {
+		super(navigation);
 		this.navigation = navigation;
 		setCurrentDir(initialDir);
 	}
@@ -56,8 +55,8 @@ public class DirChooserFace extends DefaultFace {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
-		switch (k.getKind()) {
+	public boolean onInput (final KeyStroke k, final WindowBasedTextGUI gui) throws Exception {
+		switch (k.getKeyType()) {
 			case ArrowUp:
 			case ArrowDown:
 				menuMove(k, 1);
@@ -78,7 +77,7 @@ public class DirChooserFace extends DefaultFace {
 			case Backspace:
 				gotoParentDir();
 				return true;
-			case NormalKey:
+			case Character:
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
@@ -100,13 +99,13 @@ public class DirChooserFace extends DefaultFace {
 					default:
 				}
 			default:
-				return false;
+				return super.onInput(k, gui);
 		}
 	}
 
-	private void menuMove (final Key k, final int distance) {
+	private void menuMove (final KeyStroke k, final int distance) {
 		this.selectedItemIndex = MenuHelper.moveListSelectionIndex(this.selectedItemIndex,
-				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+				k.getKeyType() == KeyType.ArrowUp || k.getKeyType() == KeyType.PageUp
 						? VDirection.UP
 						: VDirection.DOWN,
 				distance,
@@ -153,18 +152,18 @@ public class DirChooserFace extends DefaultFace {
 	}
 
 	@Override
-	public void writeScreen (final Screen scr, final ScreenWriter w) {
+	public void writeScreen (final Screen scr, final TextGraphics tg) {
 		if (this.fileList != null) {
-			writeFileListToScreen(scr, w);
+			writeFileListToScreen(scr, tg);
 		}
 		else {
-			w.drawString(0, 0, "Unable to show " + this.currentDir.getAbsolutePath());
+			tg.putString(0, 0, "Unable to show " + this.currentDir.getAbsolutePath());
 		}
 	}
 
-	private void writeFileListToScreen (final Screen scr, final ScreenWriter w) {
+	private void writeFileListToScreen (final Screen scr, final TextGraphics tg) {
 		int l = 0;
-		w.drawString(0, l++, String.format("Dir %s:", this.currentDir.getAbsolutePath()));
+		tg.putString(0, l++, String.format("Dir %s:", this.currentDir.getAbsolutePath()));
 
 		this.pageSize = scr.getTerminalSize().getRows() - l;
 		if (this.selectedItemIndex >= 0) {
@@ -184,15 +183,15 @@ public class DirChooserFace extends DefaultFace {
 				if (i > this.scrollTop + this.pageSize) break;
 				final String label = this.fileList[i].getName();
 				if (i == this.selectedItemIndex) {
-					w.drawString(1, l++, label, ScreenCharacterStyle.Reverse);
+					tg.putString(1, l++, label, SGR.REVERSE);
 				}
 				else {
-					w.drawString(1, l++, label);
+					tg.putString(1, l++, label);
 				}
 			}
 		}
 		else {
-			w.drawString(1, l++, "(empty)");
+			tg.putString(1, l++, "(empty)");
 		}
 
 	}

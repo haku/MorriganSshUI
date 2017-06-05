@@ -7,14 +7,15 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.gui.dialog.TextInputDialog;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
-import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
@@ -54,6 +55,7 @@ public class HomeFace extends DefaultFace {
 	private Object selectedItem;
 
 	public HomeFace (final FaceNavigation actions, final MnContext mnContext) {
+		super(actions);
 		this.navigation = actions;
 		this.mnContext = mnContext;
 		this.dbHelper = new DbHelper(this.navigation, mnContext, null, this.lastActionMessage, null);
@@ -74,8 +76,8 @@ public class HomeFace extends DefaultFace {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
-		switch (k.getKind()) {
+	public boolean onInput (final KeyStroke k, final WindowBasedTextGUI gui) throws Exception {
+		switch (k.getKeyType()) {
 			case ArrowUp:
 			case ArrowDown:
 				menuMove(k, 1);
@@ -89,7 +91,7 @@ public class HomeFace extends DefaultFace {
 			case Enter:
 				menuEnter(gui);
 				return true;
-			case NormalKey:
+			case Character:
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
@@ -118,13 +120,13 @@ public class HomeFace extends DefaultFace {
 				}
 			default:
 				//LOG.info("kind={} c={} a={} char={}", k.getKind(), k.isCtrlPressed(), k.isAltPressed(), String.valueOf((int) k.getCharacter()));
-				return false;
+				return super.onInput(k, gui);
 		}
 	}
 
-	private void menuMove (final Key k, final int distance) {
+	private void menuMove (final KeyStroke k, final int distance) {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
-				k.getKind() == Kind.ArrowUp ? VDirection.UP : VDirection.DOWN,
+				k.getKeyType() == KeyType.ArrowUp ? VDirection.UP : VDirection.DOWN,
 				distance,
 				this.players, this.dbs);
 	}
@@ -141,7 +143,7 @@ public class HomeFace extends DefaultFace {
 		}
 	}
 
-	private void menuClick (final GUIScreen gui) throws DbException, MorriganException {
+	private void menuClick (final WindowBasedTextGUI gui) throws DbException, MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof Player) {
 			((Player) this.selectedItem).pausePlaying();
@@ -154,11 +156,11 @@ public class HomeFace extends DefaultFace {
 			}
 		}
 		else {
-			MessageBox.showMessageBox(gui, "Error", "Unknown type: " + this.selectedItem);
+			MessageDialog.showMessageDialog(gui, "Error", "Unknown type: " + this.selectedItem);
 		}
 	}
 
-	private void menuEnter (final GUIScreen gui) throws DbException, MorriganException {
+	private void menuEnter (final WindowBasedTextGUI gui) throws DbException, MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof Player) {
 			this.navigation.startFace(new PlayerFace(this.navigation, this.mnContext, (Player) this.selectedItem));
@@ -170,19 +172,23 @@ public class HomeFace extends DefaultFace {
 			this.navigation.startFace(dbFace);
 		}
 		else {
-			MessageBox.showMessageBox(gui, "TODO", "Enter: " + this.selectedItem);
+			MessageDialog.showMessageDialog(gui, "TODO", "Enter: " + this.selectedItem);
 		}
 	}
 
-	private void askNewDb (final GUIScreen gui) throws MorriganException {
-		final String name = TextInputDialog.showTextInputBox(gui, "New DB", "Enter name:", "", 50);
+	private void askNewDb (final WindowBasedTextGUI gui) throws MorriganException {
+		final String name = new TextInputDialogBuilder()
+				.setTitle("New DB")
+				.setDescription("Enter name:")
+				.setTextBoxSize(new TerminalSize(50, 1))
+				.build().showDialog(gui);
 		if (name != null && name.length() > 0) {
 			this.mnContext.getMediaFactory().createLocalMixedMediaDb(name);
 			refreshData();
 		}
 	}
 
-	private void enqueueDb (final GUIScreen gui) throws DbException, MorriganException {
+	private void enqueueDb (final WindowBasedTextGUI gui) throws DbException, MorriganException {
 		if (this.selectedItem instanceof MediaListReference) {
 			final Player player = getPlayer(gui, "Enqueue DB");
 			if (player != null) {
@@ -192,7 +198,7 @@ public class HomeFace extends DefaultFace {
 		}
 	}
 
-	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+	private void askSearch (final WindowBasedTextGUI gui) throws DbException, MorriganException {
 		if (this.selectedItem instanceof Player) {
 			final IMediaTrackList<? extends IMediaTrack> list = ((Player) this.selectedItem).getCurrentList();
 			if (list instanceof IMixedMediaDb) {
@@ -205,7 +211,7 @@ public class HomeFace extends DefaultFace {
 		}
 	}
 
-	private Player getPlayer (final GUIScreen gui, final String title) {
+	private Player getPlayer (final WindowBasedTextGUI gui, final String title) {
 		return PlayerHelper.askWhichPlayer(gui, title, null, this.mnContext.getPlayerReader().getPlayers());
 	}
 
@@ -222,26 +228,26 @@ public class HomeFace extends DefaultFace {
 	}
 
 	@Override
-	public void writeScreen (final Screen scr, final ScreenWriter w) {
+	public void writeScreen (final Screen scr, final TextGraphics tg) {
 		refreshStaleData();
 
 		int l = 0;
-		w.drawString(0, l++, "Players");
-		l = printPlayers(w, l);
+		tg.putString(0, l++, "Players");
+		l = printPlayers(tg, l);
 
-		this.lastActionMessage.drawLastActionMessage(w, l++);
+		this.lastActionMessage.drawLastActionMessage(tg, l++);
 
 		if (MenuHelper.sizeOf(this.tasks) > 0) {
-			w.drawString(0, l++, "Background Tasks");
-			l = printTasks(w, l);
+			tg.putString(0, l++, "Background Tasks");
+			l = printTasks(tg, l);
 			l++;
 		}
 
-		w.drawString(0, l++, "DBs");
-		l = printDbs(w, l);
+		tg.putString(0, l++, "DBs");
+		l = printDbs(tg, l);
 	}
 
-	private int printPlayers (final ScreenWriter w, final int initialLine) {
+	private int printPlayers (final TextGraphics tg, final int initialLine) {
 		int l = initialLine;
 		if (this.players.size() > 0) {
 			for (final Player p : this.players) {
@@ -249,43 +255,43 @@ public class HomeFace extends DefaultFace {
 				final String line = String.format("%s %s %s",
 						p.getName(), PrintingThingsHelper.playerStateMsg(p), PrintingThingsHelper.playingItemTitle(p));
 				if (p.equals(this.selectedItem)) {
-					w.drawString(1, l++, line, ScreenCharacterStyle.Reverse);
+					tg.putString(1, l++, line, SGR.REVERSE);
 				}
 				else {
-					w.drawString(1, l++, line);
+					tg.putString(1, l++, line);
 				}
 			}
 		}
 		else {
-			w.drawString(1, l++, "(no players)");
+			tg.putString(1, l++, "(no players)");
 		}
 		return l;
 	}
 
-	private int printTasks (final ScreenWriter w, final int initialLine) {
+	private int printTasks (final TextGraphics tg, final int initialLine) {
 		int l = initialLine;
 		for (final String task : this.tasks) {
 			for (final String line : task.split("\\r?\\n")) {
-				w.drawString(1, l++, line);
+				tg.putString(1, l++, line);
 			}
 		}
 		return l;
 	}
 
-	private int printDbs (final ScreenWriter w, final int initialLine) {
+	private int printDbs (final TextGraphics tg, final int initialLine) {
 		int l = initialLine;
 		if (this.dbs.size() > 0) {
 			for (final MediaListReference db : this.dbs) {
 				if (db.equals(this.selectedItem)) {
-					w.drawString(1, l++, db.getTitle(), ScreenCharacterStyle.Reverse);
+					tg.putString(1, l++, db.getTitle(), SGR.REVERSE);
 				}
 				else {
-					w.drawString(1, l++, db.getTitle());
+					tg.putString(1, l++, db.getTitle());
 				}
 			}
 		}
 		else {
-			w.drawString(1, l++, "(no DBs)");
+			tg.putString(1, l++, "(no DBs)");
 		}
 		return l;
 	}

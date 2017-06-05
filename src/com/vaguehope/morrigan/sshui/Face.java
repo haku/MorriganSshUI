@@ -1,9 +1,9 @@
 package com.vaguehope.morrigan.sshui;
 
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenWriter;
 
 public interface Face {
 
@@ -24,9 +24,9 @@ public interface Face {
 
 	}
 
-	boolean onInput (Key k, GUIScreen gui) throws Exception; // NOSONAR throws Exception is part of API.
+	boolean onInput (KeyStroke k, WindowBasedTextGUI gui) throws Exception;
 
-	void writeScreen (Screen scr, ScreenWriter w);
+	void writeScreen (Screen scr, TextGraphics tg);
 
 	/**
 	 * Called when face closed with backOneLevelWithResult();

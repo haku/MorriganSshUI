@@ -4,22 +4,20 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.dialog.DialogButtons;
-import com.googlecode.lanterna.gui.dialog.DialogResult;
-import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
-import com.googlecode.lanterna.screen.ScreenWriter;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.ILocalMixedMediaDb;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.LastActionMessage;
 import com.vaguehope.morrigan.tasks.MorriganTask;
-import com.vaguehope.sqlitewrapper.DbException;
 
 public class DbPropertiesFace extends DefaultFace {
 
@@ -46,6 +44,7 @@ public class DbPropertiesFace extends DefaultFace {
 	private int pageSize = 1;
 
 	public DbPropertiesFace (final FaceNavigation navigation, final MnContext mnContext, final IMixedMediaDb db) throws MorriganException {
+		super(navigation);
 		this.navigation = navigation;
 		this.mnContext = mnContext;
 		this.db = db;
@@ -58,8 +57,8 @@ public class DbPropertiesFace extends DefaultFace {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
-		switch (k.getKind()) {
+	public boolean onInput (final KeyStroke k, final WindowBasedTextGUI gui) throws Exception {
+		switch (k.getKeyType()) {
 			case ArrowUp:
 			case ArrowDown:
 				menuMove(k, 1);
@@ -77,7 +76,7 @@ public class DbPropertiesFace extends DefaultFace {
 			case Delete:
 				removeSource(gui);
 				return true;
-			case NormalKey:
+			case Character:
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
@@ -102,13 +101,13 @@ public class DbPropertiesFace extends DefaultFace {
 					default:
 				}
 			default:
-				return false;
+				return super.onInput(k, gui);
 		}
 	}
 
-	private void menuMove (final Key k, final int distance) {
+	private void menuMove (final KeyStroke k, final int distance) {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
-				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+				k.getKeyType() == KeyType.ArrowUp || k.getKeyType() == KeyType.PageUp
 						? VDirection.UP
 						: VDirection.DOWN,
 				distance,
@@ -128,7 +127,7 @@ public class DbPropertiesFace extends DefaultFace {
 		}
 	}
 
-	private void askAddSource (final GUIScreen gui) throws MorriganException {
+	private void askAddSource (final WindowBasedTextGUI gui) throws MorriganException {
 		final File dir = DirDialog.show(gui, "Add Source", "Add", this.savedInitialDir);
 		if (dir != null) {
 			this.db.addSource(dir.getAbsolutePath());
@@ -136,12 +135,12 @@ public class DbPropertiesFace extends DefaultFace {
 		}
 	}
 
-	private void removeSource (final GUIScreen gui) throws MorriganException {
+	private void removeSource (final WindowBasedTextGUI gui) throws MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof String && this.sources != null) {
 			final int i = this.sources.indexOf(this.selectedItem);
 			final String source = (String) this.selectedItem;
-			if (MessageBox.showMessageBox(gui, "Remove Source", source, DialogButtons.YES_NO) != DialogResult.YES) return;
+			if (MessageDialog.showMessageDialog(gui, "Remove Source", source, MessageDialogButton.Yes, MessageDialogButton.No) != MessageDialogButton.Yes) return;
 			this.db.removeSource(source);
 			refreshData();
 			if (i >= this.sources.size()) { // Last item was deleted.
@@ -170,19 +169,19 @@ public class DbPropertiesFace extends DefaultFace {
 	}
 
 	@Override
-	public void writeScreen (final Screen scr, final ScreenWriter w) {
+	public void writeScreen (final Screen scr, final TextGraphics tg) {
 		if (this.db != null) {
-			writeDbPropsToScreen(scr, w);
+			writeDbPropsToScreen(scr, tg);
 		}
 		else {
-			w.drawString(0, 0, "Unable to show null db.");
+			tg.putString(0, 0, "Unable to show null db.");
 		}
 	}
 
-	private void writeDbPropsToScreen (final Screen scr, final ScreenWriter w) {
+	private void writeDbPropsToScreen (final Screen scr, final TextGraphics tg) {
 		int l = 0;
-		w.drawString(0, l++, String.format("DB %s:", this.db.getListName()));
-		this.lastActionMessage.drawLastActionMessage(w, l++);
+		tg.putString(0, l++, String.format("DB %s:", this.db.getListName()));
+		this.lastActionMessage.drawLastActionMessage(tg, l++);
 
 		this.pageSize = scr.getTerminalSize().getRows() - l;
 		final int selI = this.sources.indexOf(this.selectedItem);
@@ -199,10 +198,10 @@ public class DbPropertiesFace extends DefaultFace {
 			if (i > this.queueScrollTop + this.pageSize) break;
 			final String item = this.sources.get(i);
 			if (item.equals(this.selectedItem)) {
-				w.drawString(1, l++, String.valueOf(item), ScreenCharacterStyle.Reverse);
+				tg.putString(1, l++, String.valueOf(item), SGR.REVERSE);
 			}
 			else {
-				w.drawString(1, l++, String.valueOf(item));
+				tg.putString(1, l++, String.valueOf(item));
 			}
 		}
 	}

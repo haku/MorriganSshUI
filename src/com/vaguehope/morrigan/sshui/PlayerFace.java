@@ -2,6 +2,8 @@ package com.vaguehope.morrigan.sshui;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -9,23 +11,22 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.dialog.ActionListDialog;
-import com.googlecode.lanterna.gui.dialog.MessageBox;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.ActionListDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
-import com.googlecode.lanterna.screen.ScreenWriter;
-import com.googlecode.lanterna.terminal.Terminal.Color;
-import com.googlecode.lanterna.terminal.TerminalSize;
 import com.vaguehope.morrigan.model.exceptions.MorriganException;
 import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
-import com.vaguehope.morrigan.player.PlaybackOrder;
 import com.vaguehope.morrigan.player.PlayItem;
+import com.vaguehope.morrigan.player.PlaybackOrder;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
@@ -78,6 +79,7 @@ public class PlayerFace extends DefaultFace {
 	private Object itemDetailsBarItem;
 
 	public PlayerFace (final FaceNavigation navigation, final MnContext mnContext, final Player player) {
+		super(navigation);
 		this.navigation = navigation;
 		this.player = player;
 		this.dbHelper = new DbHelper(navigation, mnContext, player, null, null);
@@ -125,12 +127,12 @@ public class PlayerFace extends DefaultFace {
 	}
 
 	@Override
-	public boolean onInput (final Key k, final GUIScreen gui) throws DbException, MorriganException {
+	public boolean onInput (final KeyStroke k, final WindowBasedTextGUI gui) throws Exception {
 
 		// TODO
 		// - add / remove tags.
 
-		switch (k.getKind()) {
+		switch (k.getKeyType()) {
 			case ArrowUp:
 			case ArrowDown:
 				menuMove(k, 1);
@@ -148,7 +150,7 @@ public class PlayerFace extends DefaultFace {
 			case Delete:
 				deleteQueueItem();
 				return true;
-			case NormalKey:
+			case Character:
 				switch (k.getCharacter()) {
 					case 'q':
 						return this.navigation.backOneLevel();
@@ -159,7 +161,7 @@ public class PlayerFace extends DefaultFace {
 						this.player.pausePlaying();
 						return true;
 					case 'c':
-						if (k.isCtrlPressed()) {
+						if (k.isCtrlDown()) {
 							this.player.stopPlaying();
 							return true;
 						}
@@ -209,89 +211,89 @@ public class PlayerFace extends DefaultFace {
 					default:
 				}
 			default:
-				return false;
+				return super.onInput(k, gui);
 		}
 	}
 
-	private void askPlaybackOrder (final GUIScreen gui) {
-		final Action[] actions = new Action[PlaybackOrder.values().length];
+	private void askPlaybackOrder (final WindowBasedTextGUI gui) {
+		final Runnable[] actions = new Runnable[PlaybackOrder.values().length];
 		int i = 0;
 		for (final PlaybackOrder po : PlaybackOrder.values()) {
-			actions[i] = new Action() {
+			actions[i] = new Runnable() {
 				@Override
 				public String toString () {
 					return po.toString();
 				}
 
 				@Override
-				public void doAction () {
+				public void run () {
 					PlayerFace.this.player.setPlaybackOrder(po);
 				}
 			};
 			i++;
 		}
-		ActionListDialog.showActionListDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
+		ActionListDialog.showDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
 	}
 
-	private void askSearch (final GUIScreen gui) throws DbException, MorriganException {
+	private void askSearch (final WindowBasedTextGUI gui) throws DbException, MorriganException {
 		final IMediaTrackList<? extends IMediaTrack> list = this.player.getCurrentList();
 		if (list != null) {
 			if (list instanceof IMixedMediaDb) {
 				askJumpTo(gui, (IMixedMediaDb) list);
 			}
 			else {
-				MessageBox.showMessageBox(gui, "TODO", "Search: " + list);
+				MessageDialog.showMessageDialog(gui, "TODO", "Search: " + list);
 			}
 		}
 		else {
-			MessageBox.showMessageBox(gui, "Search", "No list selected.");
+			MessageDialog.showMessageDialog(gui, "Search", "No list selected.");
 		}
 	}
 
-	private void askJumpTo (final GUIScreen gui, final IMixedMediaDb db) throws DbException, MorriganException {
+	private void askJumpTo (final WindowBasedTextGUI gui, final IMixedMediaDb db) throws DbException, MorriganException {
 		this.dbHelper.askSearch(gui, db, this.savedSearchTerm);
 	}
 
-	private void showEditTagsForPlayingItem (final GUIScreen gui) throws MorriganException {
+	private void showEditTagsForPlayingItem (final WindowBasedTextGUI gui) throws MorriganException {
 		showEditTagsForItem(gui, this.player.getCurrentItem());
 	}
 
-	private void showEditTagsForSelectedItem (final GUIScreen gui) throws MorriganException {
+	private void showEditTagsForSelectedItem (final WindowBasedTextGUI gui) throws MorriganException {
 		if (this.selectedItem == null) return;
 		if (this.selectedItem instanceof PlayItem) {
 			showEditTagsForItem(gui, (PlayItem) this.selectedItem);
 		}
 	}
 
-	private static void showEditTagsForItem (final GUIScreen gui, final PlayItem item) throws MorriganException {
+	private static void showEditTagsForItem (final WindowBasedTextGUI gui, final PlayItem item) throws MorriganException {
 		if (item == null || !item.isComplete()) return;
 		TagEditor.show(gui, item.getList(), item.getTrack());
 	}
 
-	private void askFullScreen (final GUIScreen gui) {
+	private void askFullScreen (final WindowBasedTextGUI gui) {
 		final Map<Integer, String> monitors = this.player.getMonitors();
-		final Action[] actions = new Action[monitors.size()];
+		final Runnable[] actions = new Runnable[monitors.size()];
 		int i = 0;
 		for (final Entry<Integer, String> monitor : monitors.entrySet()) {
-			actions[i] = new Action() {
+			actions[i] = new Runnable() {
 				@Override
 				public String toString () {
 					return String.format("%s. %s", monitor.getKey(), monitor.getValue());
 				}
 
 				@Override
-				public void doAction () {
+				public void run () {
 					PlayerFace.this.player.goFullscreen(monitor.getKey());
 				}
 			};
 			i++;
 		}
-		ActionListDialog.showActionListDialog(gui, "Full Screen", null, actions);
+		ActionListDialog.showDialog(gui, "Full Screen", null, actions);
 	}
 
-	private void menuMove (final Key k, final int distance) throws MorriganException {
+	private void menuMove (final KeyStroke k, final int distance) throws MorriganException {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
-				k.getKind() == Kind.ArrowUp || k.getKind() == Kind.PageUp
+				k.getKeyType() == KeyType.ArrowUp || k.getKeyType() == KeyType.PageUp
 						? VDirection.UP
 						: VDirection.DOWN,
 				distance,
@@ -347,27 +349,27 @@ public class PlayerFace extends DefaultFace {
 		}
 	}
 
-	private static final ScreenCharacterStyle[] UNSELECTED = new ScreenCharacterStyle[] {};
-	private static final ScreenCharacterStyle[] SELECTED = new ScreenCharacterStyle[] { ScreenCharacterStyle.Reverse };
+	private static final Collection<SGR> UNSELECTED = Collections.emptySet();
+	private static final Collection<SGR> SELECTED = Collections.unmodifiableCollection(Arrays.asList(SGR.REVERSE));
 
 	@Override
-	public void writeScreen (final Screen scr, final ScreenWriter w) {
+	public void writeScreen (final Screen scr, final TextGraphics tg) {
 		refreshStaleData();
 
 		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
 
-		w.drawString(0, l++, String.format("Player %1.5s: %s   %s   %s.",
+		tg.putString(0, l++, String.format("Player %1.5s: %s   %s   %s.",
 				this.player.getId(),
 				this.player.getName(),
 				PrintingThingsHelper.playerStateMsg(this.player),
 				PrintingThingsHelper.listTitleAndOrder(this.player)));
-		w.drawString(1, l++, PrintingThingsHelper.playingItemTitle(this.player));
-		drawPrgBar(w, l++, terminalSize.getColumns());
-		w.drawString(1, l++, this.tagSummary);
+		tg.putString(1, l++, PrintingThingsHelper.playingItemTitle(this.player));
+		drawPrgBar(tg, l++, terminalSize.getColumns());
+		tg.putString(1, l++, this.tagSummary);
 
 		final PlayerQueue pq = this.player.getQueue();
-		w.drawString(0, l++, PrintingThingsHelper.queueSummary(pq));
+		tg.putString(0, l++, PrintingThingsHelper.queueSummary(pq));
 
 		this.pageSize = terminalSize.getRows() - l - 1;
 		final int selI = this.queue.indexOf(this.selectedItem);
@@ -383,25 +385,25 @@ public class PlayerFace extends DefaultFace {
 		for (int i = this.queueScrollTop; i < this.queue.size(); i++) {
 			if (i >= this.queueScrollTop + this.pageSize) break;
 			final PlayItem item = this.queue.get(i);
-			final ScreenCharacterStyle[] style = item.equals(this.selectedItem) ? SELECTED : UNSELECTED;
-			w.drawString(1, l, String.valueOf(item), style);
+			final Collection<SGR> style = item.equals(this.selectedItem) ? SELECTED : UNSELECTED;
+			tg.putString(1, l, String.valueOf(item), style);
 			if (item.hasTrack()) {
 				final String dur = TimeHelper.formatTimeSeconds(item.getTrack().getDuration());
-				w.drawString(terminalSize.getColumns() - dur.length(), l, dur, style);
+				tg.putString(terminalSize.getColumns() - dur.length(), l, dur, style);
 			}
 			l++;
 		}
 
-		this.textGuiUtils.drawTextRowWithBg(scr, terminalSize.getRows() - 1, this.itemDetailsBar, Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
-		scr.putString(terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
+		this.textGuiUtils.drawTextRowWithBg(tg, terminalSize.getRows() - 1, this.itemDetailsBar, TextColor.ANSI.WHITE, TextColor.ANSI.BLUE, SGR.BOLD);
+		this.textGuiUtils.drawTextWithBg(tg, terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
 				PrintingThingsHelper.scrollSummary(this.queue.size(), this.pageSize, this.queueScrollTop),
-				Color.WHITE, Color.BLUE, ScreenCharacterStyle.Bold);
+				TextColor.ANSI.WHITE, TextColor.ANSI.BLUE, SGR.BOLD);
 	}
 
 	private String lastPrgBar = null;
 	private long lastPrg = -1;
 
-	private void drawPrgBar (final ScreenWriter w, final int l, final int screenWidth) {
+	private void drawPrgBar (final TextGraphics tg, final int l, final int screenWidth) {
 		final int barWidth = screenWidth - 2;
 		final int total = this.player.getCurrentTrackDuration();
 		final long prg = total < 1 ? 0 : (long) ((this.player.getCurrentPosition() / (double) total) * barWidth);
@@ -421,7 +423,7 @@ public class PlayerFace extends DefaultFace {
 			}
 		}
 
-		w.drawString(1, l, this.lastPrgBar);
+		tg.putString(1, l, this.lastPrgBar);
 	}
 
 }

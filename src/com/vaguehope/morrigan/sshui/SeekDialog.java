@@ -1,26 +1,35 @@
 package com.vaguehope.morrigan.sshui;
 
-import com.googlecode.lanterna.gui.Action;
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.gui.Window;
-import com.googlecode.lanterna.gui.component.AbstractListBox;
-import com.googlecode.lanterna.gui.component.Button;
-import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.terminal.TerminalPosition;
-import com.googlecode.lanterna.terminal.TerminalSize;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.AbstractListBox;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.GridLayout;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
+import com.googlecode.lanterna.input.KeyStroke;
 import com.vaguehope.morrigan.player.Player;
 
-public class SeekDialog extends Window {
+public class SeekDialog extends DialogWindow {
 
 	public SeekDialog (final Player player) {
 		super("Seek");
-		addComponent(new HopListBox(player));
-		addComponent(new Button("Close", new Action() {
+
+		final Panel p = new Panel();
+		p.setLayoutManager(new GridLayout(1)
+				.setLeftMarginSize(1)
+				.setRightMarginSize(1));
+
+		p.addComponent(new HopListBox(player));
+		p.addComponent(new Button("Close", new Runnable() {
 			@Override
-			public void doAction () {
+			public void run () {
 				close();
 			}
 		}));
+
+		setComponent(p);
+		setCloseWindowWithEscape(true);
 	}
 
 	private enum SeekHop {
@@ -46,7 +55,7 @@ public class SeekDialog extends Window {
 
 	}
 
-	private static class HopListBox extends AbstractListBox {
+	private static class HopListBox extends AbstractListBox<SeekHop, HopListBox> {
 
 		private final Player player;
 
@@ -57,20 +66,20 @@ public class SeekDialog extends Window {
 		}
 
 		private SeekHop getSelectedHop () {
-			return (SeekHop) getSelectedItem();
+			return getSelectedItem();
 		}
 
 		@Override
-		public Result keyboardInteraction (final Key key) {
-			switch (key.getKind()) {
+		public synchronized Result handleKeyStroke(final KeyStroke key) {
+			switch (key.getKeyType()) {
 				case ArrowLeft:
 					seekPlayerRelative(this.player, 0 - getSelectedHop().getSeconds());
-					return Result.EVENT_HANDLED;
+					return Result.HANDLED;
 				case ArrowRight:
 					seekPlayerRelative(this.player, getSelectedHop().getSeconds());
-					return Result.EVENT_HANDLED;
+					return Result.HANDLED;
 				default:
-					return super.keyboardInteraction(key);
+					return super.handleKeyStroke(key);
 			}
 		}
 
@@ -82,13 +91,13 @@ public class SeekDialog extends Window {
 		}
 
 		@Override
-		protected String createItemString (final int index) {
-			return String.valueOf(getItemAt(index));
-		}
-
-		@Override
-		public TerminalPosition getHotspot () {
-			return null;
+		protected ListItemRenderer<SeekHop, HopListBox> createDefaultListItemRenderer () {
+			return new ListItemRenderer<SeekHop, HopListBox>() {
+				@Override
+				public int getHotSpotPositionOnLine (final int selectedIndex) {
+					return -1;
+				}
+			};
 		}
 
 	}
@@ -102,8 +111,8 @@ public class SeekDialog extends Window {
 		player.seekTo(targetProportional);
 	}
 
-	public static void show (final GUIScreen owner, final Player player) {
-		owner.showWindow(new SeekDialog(player), GUIScreen.Position.CENTER);
+	public static void show (final WindowBasedTextGUI owner, final Player player) {
+		new SeekDialog(player).showDialog(owner);
 	}
 
 }
