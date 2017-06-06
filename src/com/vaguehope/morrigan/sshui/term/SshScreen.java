@@ -78,7 +78,6 @@ public abstract class SshScreen implements Runnable {
 			init();
 			while (this.alive) {
 				tick();
-				Quietly.sleep(10); // FIXME I wish terminal.readInput() used blocking-with-timeout IO.
 			}
 		}
 		catch (final Throwable t) { // NOSONAR Report all errors and clean up session.
@@ -101,9 +100,16 @@ public abstract class SshScreen implements Runnable {
 
 	private void tick () throws IOException, InterruptedException {
 		final long now = System.nanoTime();
-		if (readInput() || now - this.lastPrint > PRINT_CYCLE_NANOS) {
-			printScreen();
+		if (readInput()) {
+			printScreen(false);
 			this.lastPrint = now;
+		}
+		else if (now - this.lastPrint > PRINT_CYCLE_NANOS) {
+			printScreen(true);
+			this.lastPrint = now;
+		}
+		else {
+			Quietly.sleep(10); // FIXME I wish terminal.readInput() used blocking-with-timeout IO.
 		}
 	}
 
@@ -116,16 +122,18 @@ public abstract class SshScreen implements Runnable {
 		return changed;
 	}
 
-	protected void printScreen () throws IOException {
+	protected void printScreen (final boolean fullRedraw) throws IOException {
 		this.screen.doResizeIfNecessary();
 
-		this.screen.clear();
+		if (fullRedraw) {
+			this.screen.clear();
+		}
+		else {
+			this.textGraphics.fill(' ');
+		}
+
 		writeScreen(this.screen, this.textGraphics);
 		this.screen.refresh();
-	}
-
-	protected void writeScreen () {
-		writeScreen(this.screen, this.textGraphics);
 	}
 
 	/**
