@@ -37,4 +37,9 @@ public abstract class DefaultFace implements Face {
 		LOG.warn("Face returned value that was not used: {}", result);
 	}
 
+	@Override
+	public void onClose () throws Exception {
+		// Do nothing by default.
+	}
+
 }

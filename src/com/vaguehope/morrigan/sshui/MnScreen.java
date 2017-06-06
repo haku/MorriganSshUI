@@ -99,7 +99,15 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 			scheduleQuit("user quit");
 			return false;
 		}
-		this.faces.removeLast();
+		final Face removedFace = this.faces.removeLast();
+		if (removedFace != null) {
+			try {
+				removedFace.onClose();
+			}
+			catch (final Exception e) {
+				LOG.error("onClose() failed.", e);
+			}
+		}
 		return true;
 	}
 

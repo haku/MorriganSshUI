@@ -17,6 +17,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.ActionListDialog;
+import com.googlecode.lanterna.gui2.dialogs.ActionListDialogBuilder;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
@@ -87,6 +88,12 @@ public class DbFace extends DefaultFace {
 		this.defaultPlayer = defaultPlayer;
 		this.dbHelper = new DbHelper(navigation, mnContext, this.defaultPlayer, this.lastActionMessage, this);
 		refreshData();
+	}
+
+	@Override
+	public void onClose () throws Exception {
+		saveScrollIfRequired();
+		super.onClose();
 	}
 
 	public void restoreSavedScroll () throws MorriganException {
@@ -169,9 +176,6 @@ public class DbFace extends DefaultFace {
 				return true;
 			case Character:
 				switch (k.getCharacter()) {
-					case 'q':
-						saveScrollIfRequired();
-						return this.navigation.backOneLevel();
 					case 'h':
 						this.navigation.startFace(new HelpFace(this.navigation, HELP_TEXT));
 						return true;
@@ -351,8 +355,13 @@ public class DbFace extends DefaultFace {
 				actions.add(new SortColumnAction(this.db, col, SortDirection.DESC));
 			}
 		}
-		ActionListDialog.showDialog(gui, "Sort Order", "Current: " + PrintingThingsHelper.sortSummary(this.db),
-				actions.toArray(new Runnable[actions.size()]));
+		final ActionListDialog dlg = new ActionListDialogBuilder()
+				.setTitle("Sort Order")
+				.setDescription("Current: " + PrintingThingsHelper.sortSummary(this.db))
+				.addActions(actions.toArray(new Runnable[actions.size()]))
+				.build();
+		dlg.setCloseWindowWithEscape(true);
+		dlg.showDialog(gui);
 	}
 
 	private void askSearch (final WindowBasedTextGUI gui) throws DbException, MorriganException {
@@ -409,11 +418,9 @@ public class DbFace extends DefaultFace {
 
 			if (item.isMissing()) {
 				this.textGuiUtils.drawTextWithFg(tg, 0, l, "m", TextColor.ANSI.YELLOW);
-				this.textGuiUtils.drawTextWithFg(tg, name.length() + 2, l, "(missing)", TextColor.ANSI.YELLOW);
 			}
 			else if (!item.isEnabled()) {
 				this.textGuiUtils.drawTextWithFg(tg, 0, l, "d", TextColor.ANSI.RED);
-				this.textGuiUtils.drawTextWithFg(tg, name.length() + 2, l, "(disabled)", TextColor.ANSI.RED);
 			}
 			else if (selectedItem) {
 				tg.putString(0, l, ">");
@@ -425,7 +432,24 @@ public class DbFace extends DefaultFace {
 			else {
 				tg.disableModifiers(SGR.REVERSE);
 			}
+
+			// Item title.
 			tg.putString(1, l, name);
+
+			// Rest of item title space if selected.
+			if (i == this.selectedItemIndex) {
+				for (int x = 1 + name.length(); x < colRightLastPlayed; x++) {
+					tg.setCharacter(x, l, ' ');
+				}
+			}
+
+			// Warning labels.
+			if (item.isMissing()) {
+				this.textGuiUtils.drawTextWithFg(tg, name.length() + 2, l, "(missing)", TextColor.ANSI.YELLOW);
+			}
+			else if (!item.isEnabled()) {
+				this.textGuiUtils.drawTextWithFg(tg, name.length() + 2, l, "(disabled)", TextColor.ANSI.RED);
+			}
 
 			// Last played column.
 			if (item.getDateLastPlayed() != null) {

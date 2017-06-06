@@ -33,4 +33,9 @@ public interface Face {
 	 */
 	void onFaceResult (Object result) throws Exception; // NOSONAR throws Exception is part of API.
 
+	/**
+	 * Called once when face is closed.
+	 */
+	void onClose () throws Exception;
+
 }
