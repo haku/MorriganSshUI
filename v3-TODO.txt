@@ -1,3 +1,2 @@
-- deflicker DB scrolling
 - reduce style calls / use themes / depricate TextGuiUtils
 - tidy theme
