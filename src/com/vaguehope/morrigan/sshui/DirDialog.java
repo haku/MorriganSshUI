@@ -3,6 +3,7 @@ package com.vaguehope.morrigan.sshui;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -65,6 +66,7 @@ public class DirDialog extends DialogWindow {
 		setComponent(p);
 
 		setCloseWindowWithEscape(true);
+		setHints(new HashSet<Hint>(Arrays.asList(Hint.CENTERED, Hint.MODAL)));
 
 		this.lstDirs.setDir(savedInitialDir.get());
 	}

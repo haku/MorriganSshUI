@@ -1,6 +1,8 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -112,6 +114,7 @@ public class JumpToDialog extends DialogWindow {
 		setComponent(p);
 
 		setCloseWindowWithEscape(true);
+		setHints(new HashSet<Hint>(Arrays.asList(Hint.CENTERED, Hint.MODAL)));
 
 		setSearchResults(null); // Init msgs.
 		final String term = savedSearchTerm.get();

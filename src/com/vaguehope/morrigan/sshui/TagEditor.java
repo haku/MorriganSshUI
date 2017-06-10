@@ -1,5 +1,8 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.AbstractListBox;
 import com.googlecode.lanterna.gui2.Button;
@@ -61,6 +64,7 @@ public class TagEditor extends DialogWindow {
 		setComponent(p);
 
 		setCloseWindowWithEscape(true);
+		setHints(new HashSet<Hint>(Arrays.asList(Hint.CENTERED, Hint.MODAL)));
 
 		this.lstTags.reloadTags();
 	}
