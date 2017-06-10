@@ -43,13 +43,14 @@ public class DbFace extends DefaultFace {
 			"      z\tcentre selection\n" +
 			"      /\tsearch DB\n" +
 			"      o\tsort order\n" +
-			"      e\tenqueue item\n" +
+			"      e\tenqueue item(s)\n" +
 			"      E\tenqueue DB\n" +
-			"<enter>\tplay item\n" +
+			"<enter>\tplay item(s)\n" +
 			"      t\ttag editor\n" +
 			"      v\tselect\n" +
-			"      w\tcopy file\n" +
-			"      d\ttoggle enabled\n" +
+			"      x\tselect\n" +
+			"      w\tcopy file(s)\n" +
+			"      d\ttoggle item(s) enabled\n" +
 			"      r\trefresh query\n" +
 			"     f6\tDB properties\n" +
 			"      q\tback a page\n" +
@@ -198,6 +199,7 @@ public class DbFace extends DefaultFace {
 						showEditTagsForSelectedItem(gui);
 						return true;
 					case 'v':
+					case 'x':
 						toggleSelection();
 						return true;
 					case 'w':
@@ -217,6 +219,7 @@ public class DbFace extends DefaultFace {
 						return true;
 					default:
 				}
+				//$FALL-THROUGH$
 			default:
 				return super.onInput(k, gui);
 		}
