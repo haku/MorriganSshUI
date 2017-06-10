@@ -1,7 +1,10 @@
 package com.vaguehope.morrigan.sshui;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.AbstractListBox;
@@ -81,10 +84,21 @@ public class TagEditor extends DialogWindow {
 		@Override
 		public synchronized Result handleKeyStroke (final KeyStroke key) {
 			switch (key.getKeyType()) {
+				case Tab:
+					autocomplete();
+					return Result.HANDLED;
 				case Enter:
 					addTag();
+					resetAutocomplete(null);
 					return Result.HANDLED;
+				case Character:
+					if (key.isCtrlDown() && key.getCharacter() == 'u') {
+						setText("");
+						return Result.HANDLED;
+					}
+					//$FALL-THROUGH$
 				default:
+					resetAutocomplete(null);
 					return super.handleKeyStroke(key);
 			}
 		}
@@ -100,6 +114,42 @@ public class TagEditor extends DialogWindow {
 			catch (final MorriganException e) {
 				MessageDialog.showMessageDialog(this.tagEditor.getTextGUI(), "Error adding tag", e.toString());
 			}
+		}
+
+		private List<MediaTag> suggestions;
+		private int suggestionIndex;
+
+		private void autocomplete () {
+			if (this.suggestions != null && this.suggestions.size() > 0) {
+				this.suggestionIndex += 1;
+				if (this.suggestionIndex >= this.suggestions.size()) this.suggestionIndex = 0;
+				final MediaTag tag = this.suggestions.get(this.suggestionIndex);
+				setText(tag.getTag());
+				setCaretPosition(tag.getTag().length());
+				return;
+			}
+
+			final String input = getText();
+			if (input == null || input.length() < 1) return;
+
+			try {
+				final Map<String, MediaTag> searchRes = this.tagEditor.list.tagSearch(input, 20);
+				resetAutocomplete(new ArrayList<MediaTag>(searchRes.values()));
+
+				if (searchRes.size() > 0) {
+					final MediaTag tag = searchRes.values().iterator().next();
+					setText(tag.getTag());
+					setCaretPosition(tag.getTag().length());
+				}
+			}
+			catch (final MorriganException e) {
+				MessageDialog.showMessageDialog(this.tagEditor.getTextGUI(), "Error searching tags", e.toString());
+			}
+		}
+
+		private void resetAutocomplete (final List<MediaTag> items) {
+			this.suggestions = items;
+			this.suggestionIndex = 0;
 		}
 
 	}
