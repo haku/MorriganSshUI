@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.input.SshInputMapping;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
+import com.vaguehope.morrigan.sshui.ssh.SshInputMapping;
 
 public class SshTerminal extends UnixLikeTerminal implements SignalListener {
 
