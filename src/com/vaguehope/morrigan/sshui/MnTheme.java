@@ -48,7 +48,7 @@ public class MnTheme {
 				.setActive(editableForeground, editableBackground, activeStyle)
 				.setPreLight(editableForeground, editableBackground);
 		theme.addOverride(DefaultWindowDecorationRenderer.class, baseForeground, baseBackground)
-				.setActive(baseForeground, baseBackground, activeStyle);
+				.setActive(baseForeground, baseBackground, new SGR[] { SGR.BOLD });
 		theme.addOverride(GUIBackdrop.class, baseForeground, guiBackground );
 		theme.addOverride(RadioBoxList.class, baseForeground, baseBackground)
 				.setActive(selectedForeground, selectedBackground, activeStyle);
