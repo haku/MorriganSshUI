@@ -136,7 +136,7 @@ public class DirDialog extends DialogWindow {
 					gotoParentDir();
 					return Result.HANDLED;
 				default:
-					return Result.UNHANDLED;
+					return super.handleKeyStroke(key);
 			}
 		}
 
