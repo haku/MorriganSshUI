@@ -26,6 +26,7 @@ import com.vaguehope.morrigan.model.media.IMediaTrack;
 import com.vaguehope.morrigan.model.media.IMediaTrackList;
 import com.vaguehope.morrigan.model.media.IMixedMediaDb;
 import com.vaguehope.morrigan.player.PlayItem;
+import com.vaguehope.morrigan.player.PlayItemType;
 import com.vaguehope.morrigan.player.PlaybackOrder;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
@@ -39,6 +40,7 @@ public class PlayerFace extends DefaultFace {
 	private static final String HELP_TEXT =
 			" <space>\tplay / pause\n" +
 			"<ctrl>+c\tstop\n" +
+			"       C\tstop after\n" +
 			"       i\tseek\n" +
 			"       n\tnext track\n" +
 			"       o\tplayback order\n" +
@@ -166,6 +168,9 @@ public class PlayerFace extends DefaultFace {
 							return true;
 						}
 						return false;
+					case 'C':
+						this.player.getQueue().addToQueueTop(this.player.getQueue().makeMetaItem(PlayItemType.STOP));
+						return true;
 					case 'i':
 						SeekDialog.show(gui, this.player);
 						return true;
@@ -385,14 +390,34 @@ public class PlayerFace extends DefaultFace {
 		for (int i = this.queueScrollTop; i < this.queue.size(); i++) {
 			if (i >= this.queueScrollTop + this.pageSize) break;
 			final PlayItem item = this.queue.get(i);
-			final Collection<SGR> style = item.equals(this.selectedItem) ? SELECTED : UNSELECTED;
-			tg.putString(1, l, String.valueOf(item), style);
+
+			final boolean iSelected = item.equals(this.selectedItem);
+			if (iSelected) {
+				tg.enableModifiers(SGR.REVERSE);
+			}
+			else {
+				tg.disableModifiers(SGR.REVERSE);
+			}
+
+			// Item title.
+			final String name = String.valueOf(item);
+			tg.putString(1, l, name);
+
+			// Rest of item title space if selected.
+			if (iSelected) {
+				for (int x = 1 + name.length(); x < terminalSize.getColumns(); x++) {
+					tg.setCharacter(x, l, ' ');
+				}
+			}
+
 			if (item.hasTrack()) {
 				final String dur = TimeHelper.formatTimeSeconds(item.getTrack().getDuration());
-				tg.putString(terminalSize.getColumns() - dur.length(), l, dur, style);
+				tg.putString(terminalSize.getColumns() - dur.length(), l, dur);
 			}
+
 			l++;
 		}
+		tg.disableModifiers(SGR.REVERSE);
 
 		this.textGuiUtils.drawTextRowWithBg(tg, terminalSize.getRows() - 1, this.itemDetailsBar, TextColor.ANSI.WHITE, TextColor.ANSI.BLUE, SGR.BOLD);
 		this.textGuiUtils.drawTextWithBg(tg, terminalSize.getColumns() - 3, terminalSize.getRows() - 1,
