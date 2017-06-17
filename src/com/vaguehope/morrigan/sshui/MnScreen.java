@@ -138,6 +138,11 @@ public class MnScreen extends SshScreen implements FaceNavigation {
 	}
 
 	@Override
+	protected boolean processEvents () {
+		return activeFace().processEvents();
+	}
+
+	@Override
 	protected void writeScreen (final Screen scr, final TextGraphics tg) {
 		activeFace().writeScreen(scr, tg);
 	}

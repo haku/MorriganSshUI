@@ -26,6 +26,8 @@ public interface Face {
 
 	boolean onInput (KeyStroke k, WindowBasedTextGUI gui) throws Exception;
 
+	boolean processEvents ();
+
 	void writeScreen (Screen scr, TextGraphics tg);
 
 	/**

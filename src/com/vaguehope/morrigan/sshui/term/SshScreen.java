@@ -100,7 +100,7 @@ public abstract class SshScreen implements Runnable {
 
 	private void tick () throws IOException, InterruptedException {
 		final long now = System.nanoTime();
-		if (readInput()) {
+		if (processEvents() | readInput()) {
 			printScreen(false);
 			this.lastPrint = now;
 		}
@@ -112,6 +112,8 @@ public abstract class SshScreen implements Runnable {
 			Quietly.sleep(10); // FIXME I wish terminal.readInput() used blocking-with-timeout IO.
 		}
 	}
+
+	protected abstract boolean processEvents ();
 
 	private boolean readInput () throws IOException, InterruptedException {
 		boolean changed = false;

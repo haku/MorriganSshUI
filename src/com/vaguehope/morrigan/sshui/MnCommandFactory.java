@@ -21,7 +21,7 @@ public class MnCommandFactory implements Factory<Command> {
 		this.es = new ThreadPoolExecutor(0, MAX_CLIENTS,
 				1L, TimeUnit.MINUTES,
 				new SynchronousQueue<Runnable>(),
-				new DaemonThreadFactory("ssh"));
+				new DaemonThreadFactory("sshui"));
 		this.es.allowCoreThreadTimeOut(true);
 	}
 

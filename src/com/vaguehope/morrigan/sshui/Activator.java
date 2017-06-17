@@ -3,6 +3,10 @@ package com.vaguehope.morrigan.sshui;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.SshServer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -18,6 +22,7 @@ import com.vaguehope.morrigan.player.PlayerReaderTracker;
 import com.vaguehope.morrigan.sshui.ssh.MnPasswordAuthenticator;
 import com.vaguehope.morrigan.sshui.ssh.UserPublickeyAuthenticator;
 import com.vaguehope.morrigan.tasks.AsyncTasksRegisterTracker;
+import com.vaguehope.morrigan.util.DaemonThreadFactory;
 
 public class Activator implements BundleActivator {
 
@@ -35,6 +40,7 @@ public class Activator implements BundleActivator {
 	private PlayerReaderTracker playerReaderTracker;
 	private MediaFactoryTracker mediaFactoryTracker;
 	private AsyncTasksRegisterTracker asyncTasksRegisterTracker;
+	private ExecutorService unreliableEs;
 
 	@Override
 	public void start (final BundleContext context) throws IOException, GeneralSecurityException {
@@ -47,7 +53,16 @@ public class Activator implements BundleActivator {
 		this.mediaFactoryTracker = new MediaFactoryTracker(context);
 		this.asyncTasksRegisterTracker = new AsyncTasksRegisterTracker(context);
 
-		this.mnCommandFactory = new MnCommandFactory(new MnContext(this.playerReaderTracker, this.mediaFactoryTracker, this.asyncTasksRegisterTracker, new UserPrefs()));
+		this.unreliableEs = new ThreadPoolExecutor(0, 1,
+				1L, TimeUnit.MINUTES,
+				new LinkedBlockingQueue<Runnable>(1),
+				new DaemonThreadFactory("sshbg"),
+				new ThreadPoolExecutor.DiscardOldestPolicy());
+
+		final MnContext mnContext = new MnContext(
+				this.playerReaderTracker, this.mediaFactoryTracker, this.asyncTasksRegisterTracker,
+				new UserPrefs(), this.unreliableEs);
+		this.mnCommandFactory = new MnCommandFactory(mnContext);
 
 		this.sshd = SshServer.setUpDefaultServer();
 		this.sshd.setPort(SSHD_PORT);
@@ -76,6 +91,11 @@ public class Activator implements BundleActivator {
 		this.asyncTasksRegisterTracker.dispose();
 		this.mediaFactoryTracker.dispose();
 		this.playerReaderTracker.dispose();
+
+		if (this.unreliableEs != null) {
+			this.unreliableEs.shutdownNow();
+			this.unreliableEs = null;
+		}
 
 		LOG.info("sshUI stopped.");
 	}

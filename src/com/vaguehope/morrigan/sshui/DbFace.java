@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.SGR;
@@ -136,7 +137,7 @@ public class DbFace extends DefaultFace {
 		this.mediaItems = this.db.getMediaItems();
 	}
 
-	private void updateItemDetailsBar () throws MorriganException {
+	private void updateItemDetailsBar () {
 		if (this.selectedItems.size() > 0) {
 			this.itemDetailsBar = String.format("%s selected.", this.selectedItems.size());
 			this.itemDetailsBarItem = null;
@@ -144,8 +145,22 @@ public class DbFace extends DefaultFace {
 		else {
 			final IMixedMediaItem item = getSelectedItem();
 			if (this.itemDetailsBarItem != null && this.itemDetailsBarItem.equals(item)) return;
-			this.itemDetailsBarItem = item;
-			this.itemDetailsBar = PrintingThingsHelper.summariseItemTags(this.db, item);
+
+			this.mnContext.getUnreliableEs().submit(new Callable<Void>() {
+				@Override
+				public Void call () throws MorriganException {
+					final String tags = PrintingThingsHelper.summariseItemTags(DbFace.this.db, item);
+					scheduleOnUiThread(new Callable<Void>() {
+						@Override
+						public Void call () {
+							DbFace.this.itemDetailsBarItem = item;
+							DbFace.this.itemDetailsBar = tags;
+							return null;
+						}
+					});
+					return null;
+				}
+			});
 		}
 	}
 
