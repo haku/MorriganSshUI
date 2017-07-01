@@ -364,11 +364,12 @@ public class PlayerFace extends DefaultFace {
 		final TerminalSize terminalSize = scr.getTerminalSize();
 		int l = 0;
 
-		tg.putString(0, l++, String.format("Player %1.5s: %s   %s   %s.",
+		tg.putString(0, l++, String.format("Player %1.5s: %s   %s   %s.   %s.",
 				this.player.getId(),
 				this.player.getName(),
 				PrintingThingsHelper.playerStateMsg(this.player),
-				PrintingThingsHelper.listTitleAndOrder(this.player)));
+				PrintingThingsHelper.listTitleAndOrder(this.player),
+				this.player.getTranscode()));
 		tg.putString(1, l++, PrintingThingsHelper.playingItemTitle(this.player));
 		drawPrgBar(tg, l++, terminalSize.getColumns());
 		tg.putString(1, l++, this.tagSummary);
