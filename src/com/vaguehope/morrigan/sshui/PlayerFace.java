@@ -93,6 +93,9 @@ public class PlayerFace extends DefaultFace {
 	}
 
 	private void refreshData () {
+
+		//this.player.isDisposed(); // TODO what if true?
+
 		final PlayItem currentItem = this.player.getCurrentItem();
 		if (this.tagSummaryItem == null || !this.tagSummaryItem.equals(currentItem)) {
 			this.tagSummary = PrintingThingsHelper.summariseTags(this.player);
