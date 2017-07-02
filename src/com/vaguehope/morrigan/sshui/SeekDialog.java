@@ -40,7 +40,8 @@ public class SeekDialog extends DialogWindow {
 		FIVE(5),
 		THIRTY(30),
 		SIXTY(60),
-		NINETY(90);
+		NINETY(90),
+		THREEHUNDRED(300);
 
 		private final int seconds;
 
