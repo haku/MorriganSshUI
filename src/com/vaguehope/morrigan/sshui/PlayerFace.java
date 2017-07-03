@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TerminalTextUtils;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
@@ -409,7 +410,7 @@ public class PlayerFace extends DefaultFace {
 
 			// Rest of item title space if selected.
 			if (iSelected) {
-				for (int x = 1 + name.length(); x < terminalSize.getColumns(); x++) {
+				for (int x = 1 + TerminalTextUtils.getColumnWidth(name); x < terminalSize.getColumns(); x++) {
 					tg.setCharacter(x, l, ' ');
 				}
 			}

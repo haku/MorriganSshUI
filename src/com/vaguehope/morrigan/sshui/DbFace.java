@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TerminalTextUtils;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
@@ -456,7 +457,7 @@ public class DbFace extends DefaultFace {
 
 			// Rest of item title space if selected.
 			if (i == this.selectedItemIndex) {
-				for (int x = 1 + name.length(); x < colRightLastPlayed; x++) {
+				for (int x = 1 + TerminalTextUtils.getColumnWidth(name); x < colRightLastPlayed; x++) {
 					tg.setCharacter(x, l, ' ');
 				}
 			}
