@@ -1,7 +1,6 @@
 package com.vaguehope.morrigan.sshui;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,19 +24,21 @@ import com.vaguehope.morrigan.player.PlayItem;
 import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.LastActionMessage;
+import com.vaguehope.morrigan.tasks.AsyncTask;
 import com.vaguehope.sqlitewrapper.DbException;
 
 public class HomeFace extends DefaultFace {
 
 	private static final String HELP_TEXT =
-			"      g\tgo to top of list\n" +
-			"      G\tgo to end of list\n" +
-			"<space>\tplay / pause selected player or play DB\n" +
-			"      n\tcreate new DB\n" +
-			"      e\tenqueue DB\n" +
-			"      /\tsearch DB\n" +
-			"      q\tback a page\n" +
-			"      h\tthis help text";
+			"       g\tgo to top of list\n" +
+			"       G\tgo to end of list\n" +
+			" <space>\tplay / pause selected player or play DB\n" +
+			"       n\tcreate new DB\n" +
+			"       e\tenqueue DB\n" +
+			"       /\tsearch DB\n" +
+			"<ctrl>+c\tcancel task\n" +
+			"       q\tback a page\n" +
+			"       h\tthis help text";
 
 	private static final long DATA_REFRESH_MILLIS = 500L;
 
@@ -50,7 +51,7 @@ public class HomeFace extends DefaultFace {
 
 	private long lastDataRefresh = 0;
 	private List<Player> players;
-	private List<String> tasks;
+	private List<AsyncTask> tasks;
 	private List<MediaListReference> dbs;
 	private Object selectedItem;
 
@@ -63,7 +64,7 @@ public class HomeFace extends DefaultFace {
 
 	private void refreshData () {
 		this.players = asList(this.mnContext.getPlayerReader().getPlayers());
-		this.tasks = Arrays.asList(this.mnContext.getAsyncTasksRegister().reportIndiviually());
+		this.tasks = this.mnContext.getAsyncTasksRegister().tasks();
 		this.dbs = asList(this.mnContext.getMediaFactory().getAllLocalMixedMediaDbs());
 	}
 
@@ -116,6 +117,12 @@ public class HomeFace extends DefaultFace {
 					case '/':
 						askSearch(gui);
 						return true;
+					case 'c':
+						if (k.isCtrlDown()) {
+							cancelSelectedTask();
+							return true;
+						}
+						return false;
 					default:
 				}
 			default:
@@ -128,16 +135,18 @@ public class HomeFace extends DefaultFace {
 		this.selectedItem = MenuHelper.moveListSelection(this.selectedItem,
 				k.getKeyType() == KeyType.ArrowUp ? VDirection.UP : VDirection.DOWN,
 				distance,
-				this.players, this.dbs);
+				this.players, this.dbs, this.tasks);
 	}
 
 	private void menuMoveEnd (final VDirection direction) {
 		switch (direction) {
 			case UP:
-				this.selectedItem = MenuHelper.listOfListsGet(0, this.players, this.dbs);
+				this.selectedItem = MenuHelper.listOfListsGet(0, this.players, this.dbs, this.tasks);
 				break;
 			case DOWN:
-				this.selectedItem = MenuHelper.listOfListsGet(MenuHelper.sumSizes(this.players, this.dbs) - 1, this.players, this.dbs);
+				this.selectedItem = MenuHelper.listOfListsGet(
+						MenuHelper.sumSizes(this.players, this.dbs, this.tasks) - 1,
+						this.players, this.dbs, this.tasks);
 				break;
 			default:
 		}
@@ -155,6 +164,9 @@ public class HomeFace extends DefaultFace {
 				playPlayItem(new PlayItem(db, null), player);
 			}
 		}
+		else if (this.selectedItem instanceof AsyncTask) {
+			// Do nothing.
+		}
 		else {
 			MessageDialog.showMessageDialog(gui, "Error", "Unknown type: " + this.selectedItem);
 		}
@@ -170,6 +182,9 @@ public class HomeFace extends DefaultFace {
 			final DbFace dbFace = new DbFace(this.navigation, this.mnContext, db, null);
 			dbFace.restoreSavedScroll();
 			this.navigation.startFace(dbFace);
+		}
+		else if (this.selectedItem instanceof AsyncTask) {
+			// Do nothing.
 		}
 		else {
 			MessageDialog.showMessageDialog(gui, "TODO", "Enter: " + this.selectedItem);
@@ -237,14 +252,15 @@ public class HomeFace extends DefaultFace {
 
 		this.lastActionMessage.drawLastActionMessage(tg, l++);
 
+		tg.putString(0, l++, "DBs");
+		l = printDbs(tg, l);
+
 		if (MenuHelper.sizeOf(this.tasks) > 0) {
+			l++;
 			tg.putString(0, l++, "Background Tasks");
 			l = printTasks(tg, l);
 			l++;
 		}
-
-		tg.putString(0, l++, "DBs");
-		l = printDbs(tg, l);
 	}
 
 	private int printPlayers (final TextGraphics tg, final int initialLine) {
@@ -270,9 +286,15 @@ public class HomeFace extends DefaultFace {
 
 	private int printTasks (final TextGraphics tg, final int initialLine) {
 		int l = initialLine;
-		for (final String task : this.tasks) {
-			for (final String line : task.split("\\r?\\n")) {
-				tg.putString(1, l++, line);
+		for (final AsyncTask task : this.tasks) {
+			final String summmary = task.summary();
+			for (final String line : summmary.split("\\r?\\n")) {
+				if (task.equals(this.selectedItem)) {
+					tg.putString(1, l++, line, SGR.REVERSE);
+				}
+				else {
+					tg.putString(1, l++, line);
+				}
 			}
 		}
 		return l;
@@ -294,6 +316,15 @@ public class HomeFace extends DefaultFace {
 			tg.putString(1, l++, "(no DBs)");
 		}
 		return l;
+	}
+
+	private void cancelSelectedTask() {
+		if (this.selectedItem == null) return;
+		if (this.selectedItem instanceof AsyncTask) {
+			final AsyncTask task = (AsyncTask) this.selectedItem;
+			task.cancel();
+			this.lastActionMessage.setLastActionMessage(String.format("Cancelled: %s", task.title()));
+		}
 	}
 
 	private static <T> List<T> asList (final Collection<T> c) {
