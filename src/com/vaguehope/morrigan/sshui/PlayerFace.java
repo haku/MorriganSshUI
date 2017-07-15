@@ -33,6 +33,7 @@ import com.vaguehope.morrigan.player.Player;
 import com.vaguehope.morrigan.player.PlayerQueue;
 import com.vaguehope.morrigan.sshui.MenuHelper.VDirection;
 import com.vaguehope.morrigan.sshui.util.TextGuiUtils;
+import com.vaguehope.morrigan.transcode.Transcode;
 import com.vaguehope.morrigan.util.TimeHelper;
 import com.vaguehope.sqlitewrapper.DbException;
 
@@ -45,6 +46,7 @@ public class PlayerFace extends DefaultFace {
 			"       i\tseek\n" +
 			"       n\tnext track\n" +
 			"       o\tplayback order\n" +
+			"       e\ttranscode\n" +
 			"       /\tsearch DB\n" +
 			"       r\trefresh playing item's tags\n" +
 			"       T\topen tag editor for playing item\n" +
@@ -184,6 +186,9 @@ public class PlayerFace extends DefaultFace {
 					case 'o':
 						askPlaybackOrder(gui);
 						return true;
+					case 'e':
+						askTranscode(gui);
+						return true;
 					case '/':
 						askSearch(gui);
 						return true;
@@ -242,6 +247,26 @@ public class PlayerFace extends DefaultFace {
 			i++;
 		}
 		ActionListDialog.showDialog(gui, "Playback Order", "Current: " + this.player.getPlaybackOrder(), actions);
+	}
+
+	private void askTranscode (final WindowBasedTextGUI gui) {
+		final Runnable[] actions = new Runnable[Transcode.values().length];
+		int i = 0;
+		for (final Transcode t : Transcode.values()) {
+			actions[i] = new Runnable() {
+				@Override
+				public String toString () {
+					return t.toString();
+				}
+
+				@Override
+				public void run () {
+					PlayerFace.this.player.setTranscode(t);
+				}
+			};
+			i++;
+		}
+		ActionListDialog.showDialog(gui, "Transcode", "Current: " + this.player.getTranscode(), actions);
 	}
 
 	private void askSearch (final WindowBasedTextGUI gui) throws DbException, MorriganException {
