@@ -8,7 +8,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.SshServer;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.osgi.framework.BundleActivator;
@@ -29,8 +29,6 @@ public class Activator implements BundleActivator {
 	private static final int SSHD_PORT = 14022; // TODO make config.
 	// can be DSA/RSA/EC (http://docs.oracle.com/javase/6/docs/technotes/guides/security/StandardNames.html#KeyPairGenerator)
 	private static final String HOSTKEY_NAME = "hostkey.ser";
-	private static final String HOSTKEY_TYPE = "RSA";
-	private static final int HOSTKEY_LENGTH = 1024;
 	private static final long IDLE_TIMEOUT = 24 * 60 * 60 * 1000L; // A day.
 	private static final Logger LOG = LoggerFactory.getLogger(Activator.class);
 
@@ -66,7 +64,7 @@ public class Activator implements BundleActivator {
 
 		this.sshd = SshServer.setUpDefaultServer();
 		this.sshd.setPort(SSHD_PORT);
-		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.getAbsolutePath(), HOSTKEY_TYPE, HOSTKEY_LENGTH));
+		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.toPath()));
 		this.sshd.setShellFactory(this.mnCommandFactory);
 		this.sshd.setPasswordAuthenticator(new MnPasswordAuthenticator());
 		this.sshd.setPublickeyAuthenticator(new UserPublickeyAuthenticator());
@@ -79,7 +77,11 @@ public class Activator implements BundleActivator {
 	@Override
 	public void stop (final BundleContext context) throws InterruptedException {
 		if (this.sshd != null) {
-			this.sshd.stop();
+			try {
+				this.sshd.stop();
+			} catch (IOException e) {
+				throw new IllegalStateException("Failed to stop SSHd.", e);
+			}
 			this.sshd = null;
 		}
 

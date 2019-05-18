@@ -1,6 +1,6 @@
 package com.vaguehope.morrigan.sshui.ssh;
 
-import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 import com.vaguehope.morrigan.server.ServerConfig;
