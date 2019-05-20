@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Morrigan SSHUI tests
+Bundle-SymbolicName: com.vaguehope.morrigan.sshui.tests
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: vaguehope.com
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Require-Bundle: org.junit;bundle-version="[4.0.0,5.0.0)",
+ com.vaguehope.morrigan.sshui
+Import-Package: org.osgi.framework

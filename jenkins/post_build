@@ -1,10 +1,10 @@
 #!/bin/bash
 set -eu
 DATE=$(date '+%Y%m%d_%H%M')
-jar=("./target/com.vaguehope.morrigan.sshui-"*.jar)
+jar=("./com.vaguehope.morrigan.sshui/target/com.vaguehope.morrigan.sshui-"*.jar)
 echo "jar=$jar"
 jarname="$(basename "$jar")"
 echo "jarname=$jarname"
 newname="${jarname%%.jar}-$DATE.jar"
 echo "newname=$newname"
-mv -v "$jar" "./target/$newname"
+mv -v "$jar" "./com.vaguehope.morrigan.sshui/target/$newname"

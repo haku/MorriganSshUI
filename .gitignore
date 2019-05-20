@@ -1,8 +1,8 @@
-/.classpath
-/.project
-/.settings
-/bin
-/build.xml
-/javaCompiler...args
-/lib
-/target
+**/.classpath
+**/.project
+**/.settings
+**/bin
+**/build.xml
+**/javaCompiler...args
+**/lib
+**/target
