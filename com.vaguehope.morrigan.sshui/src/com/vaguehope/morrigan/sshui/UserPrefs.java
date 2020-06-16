@@ -23,7 +23,7 @@ public class UserPrefs {
 	private boolean cached = false;
 
 	public UserPrefs () {
-		this.prefsFile = new File(new File(Config.getConfigDir()), PREF_FILE_NAME);
+		this.prefsFile = new File(Config.getConfigDir(), PREF_FILE_NAME);
 	}
 
 	public void putValue (final String subject, final String object, final int value) throws IOException {

@@ -44,7 +44,7 @@ public class Activator implements BundleActivator {
 	public void start (final BundleContext context) throws IOException, GeneralSecurityException {
 		if (this.sshd != null) throw new IllegalStateException("Already started.");
 
-		final File hostKey = new File(new File(Config.getConfigDir()), HOSTKEY_NAME);
+		final File hostKey = new File(Config.getConfigDir(), HOSTKEY_NAME);
 		LOG.info("Host key: {}", hostKey.getAbsolutePath());
 
 		this.playerReaderTracker = new PlayerReaderTracker(context);
