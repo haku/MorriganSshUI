@@ -2,6 +2,7 @@ package com.vaguehope.morrigan.sshui;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.BindException;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -63,13 +64,29 @@ public class Activator implements BundleActivator {
 		this.mnCommandFactory = new MnCommandFactory(mnContext);
 
 		this.sshd = SshServer.setUpDefaultServer();
-		this.sshd.setPort(SSHD_PORT);
 		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.toPath()));
 		this.sshd.setShellFactory(this.mnCommandFactory);
 		this.sshd.setPasswordAuthenticator(new MnPasswordAuthenticator());
 		this.sshd.setPublickeyAuthenticator(new UserPublickeyAuthenticator());
 		this.sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, String.valueOf(IDLE_TIMEOUT));
-		this.sshd.start();
+
+		IOException bindFail = null;
+		for (int i = 0; i < 10; i++) {
+			try {
+				this.sshd.setPort(SSHD_PORT + i);
+				this.sshd.start();
+				bindFail = null;
+				break;
+			}
+			catch (final BindException e) {
+				LOG.warn("Failed to bind to port {} ({}), trying a higher port...", this.sshd.getPort(), e.toString());
+				bindFail = e;
+			}
+		}
+		if (bindFail != null) {
+			LOG.error("Abandonded search for port to bind to.");
+			throw bindFail;
+		}
 
 		LOG.info("sshUI ready on port {}.", Integer.valueOf(this.sshd.getPort()));
 	}
